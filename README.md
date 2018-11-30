@@ -52,7 +52,7 @@ whereas in games like Factorio the latter interpretation is more appropriate bec
 resources and you usually care about how many electronic circuits you produce per tick, for example, not how many
 resources it would take to make 200 of them&mdash;besides, Factorio sort-of does that calculation for you. 
 
-## Recipe Definition Spec
+## Defining Recipes
 A recipe has the following components:
 1) Name - What we will refer to our recipe as
 2) Inputs - What resources are consumed by the recipe
@@ -77,14 +77,32 @@ END
 What makes sense to represent as a recipe is very dependent on the situation. Also, the above examples were very rigid
 in their format, but spaces may (technically) be omitted and tab characters are acceptable.
 
-After all recipes have been specified, add an `END` statement is required to terminate the list. 
+After all recipes have been specified, add an `END` statement is required to terminate the list.
+
+## Defining Defaults
+It is a good idea to define default recipes for any resource which has more than one way of being produced. If a default
+is not specified in advance, you will be prompted during runtime to make a choice between available recipes if the need
+arises. By specifying defaults you can streamline your use of this utility.
+
+Note that defaults are defined separately from recipes which makes it possible to change them as needed without
+altering the master set of recipes.
+
+Defaults are defined simply by writing a resource name followed by the recipe which should be used to produce it. This
+has no effect if there is only one recipe which produces a resource. An error will be raised if the resource or recipe
+does not exist or if the recipe does not output the specified resource.
+
+Example:
+```
+water collector_water
+piston r_piston
+END
+```
 
 ## Contributions
 I would love to add recipe books for games to prevent everyone needing to create their own. Please make a pull request
 with any additions or corrections and I would be very grateful.
 
 ## Future Work
-- allow specifying default recipes in advance (separate file?)
 - allow rounding up of batches and/or product demands to integer values
 - allow calculations with rational numbers instead of only real values
 - allow defining machines (for efficiency values) which have recipes they can produce

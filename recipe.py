@@ -2,8 +2,9 @@ import re
 from itertools import chain
 from typing import Dict, Set, Optional
 
-recipe_pattern = re.compile('([a-zA-Z_]\w*)\s*{([\d\w, ]+)?}\s*->\s*{([\d\w, ]+)?}\s*(?:\*\s*([\d]+(?:\.\d+)?))?\s*(?:/\s*(\d+(?:\.\d+)?))?')
+recipe_pattern = re.compile('([a-zA-Z_]\w*)\s*{([\d\w, ]+)?}\s*->\s*{([\d\w, ]+)?}\s*(?:\*\s*([\d]+(?:\.\d+)?))?\s*(?:/\s*(\d+(?:\.\d+)?))?\s*$')
 resource_pattern = re.compile('\s*(\d+)\s*([a-zA-Z_]\w*)')
+default_pattern = re.compile('([a-zA-Z_]+)\s*([a-zA-Z_]+)\s*$')
 
 
 class ParseError(RuntimeError):
@@ -158,8 +159,7 @@ class RecipeBook:
 
     def add_recipes_from_stream(self, inputstream):
         """
-        Read multiple recipes and read them into a "book", which is simply a dictionary of recipes indexed by their name.
-        This will continue reading until "END" is read.
+        Read multiple recipes and add them to this book. This will continue reading until "END" is read.
 
         If any new recipes have the same name as an existing recipe, the old one will be replaced.
 
@@ -180,6 +180,32 @@ class RecipeBook:
             self._recipes[recipe.name] = recipe
             for resource in chain(recipe.inputs(), recipe.outputs()):
                 self._resources.add(resource)
+
+    def set_defaults_from_stream(self, inputstream):
+        """
+        Read multiple default recipe choices for given resources. This will continue reading until "END" is read.
+
+        New defaults will override existing ones.
+
+        :param inputstream: A file, stdin, or other iterable object which yields a single line at a time.
+        """
+        for l in inputstream:
+            if l[0:3] == 'END':
+                break
+            m = default_pattern.match(l)
+            if m is None:
+                raise ParseError("Invalid default definition: " + l)
+
+            resource, recipe = m[1], m[2]
+            if not self.is_resource(resource):
+                raise ParseError("No resource '{}' found".format(resource))
+            if not self.is_recipe(recipe):
+                raise ParseError("No recipe '{}' found".format(recipe))
+            recipe = self[recipe]
+            if not recipe.produces(resource):
+                raise ParseError("The recipe '{}' does not produce the resource '{}'".format(recipe, resource))
+
+            self._defaults[resource] = recipe
 
     def get(self, name):
         return self._recipes.get(name)

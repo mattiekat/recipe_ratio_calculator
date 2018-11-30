@@ -5,7 +5,7 @@ from typing import Dict, Optional, Set, Tuple
 from itertools import chain
 from tabulate import tabulate
 
-request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)')
+request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)\s*$')
 Counts = Dict[str, Tuple[float, float]]
 
 
@@ -143,7 +143,14 @@ def main():
             print("Found recipes: {}".format(sorted(book.recipes())))
             print("Found resources: {}".format(sorted(book.resources())))
     else:
-        print("Enter the list of required recipes.")
+        print("Enter recipes followed by 'END'.")
+        book.add_recipes_from_stream(sys.stdin)
+
+    if len(sys.argv) > 2:
+        with open(sys.argv[2]) as filestream:
+            book.set_defaults_from_stream(filestream)
+    else:
+        print("Enter any default recipes followed by 'END'.")
         book.add_recipes_from_stream(sys.stdin)
 
     print("Specify a quantity of a resource or recipe you would like produced and type END when done. You may also "
