@@ -1,6 +1,6 @@
 import re
 from itertools import chain
-from typing import Dict, Tuple, Set
+from typing import Dict, Set, Optional
 
 recipe_pattern = re.compile('([a-zA-Z_]\w*)\s*{([\d\w, ]+)?}\s*->\s*{([\d\w, ]+)?}\s*(?:\*\s*([\d]+(?:\.\d+)?))?\s*(?:/\s*(\d+(?:\.\d+)?))?')
 resource_pattern = re.compile('\s*(\d+)\s*([a-zA-Z_]\w*)')
@@ -150,25 +150,88 @@ class Recipe:
         return s
 
 
-def read_recipe_book(inputstream) -> Tuple[Dict[str, Recipe], Set[str]]:
-    """
-    Read multiple recipes and read them into a "book", which is simply a dictionary of recipes indexed by their name.
-    This will continue reading until "END" is read in.
-    :param inputstream: A file, stdin, or other iterable object which yields a single line at a time.
-    :return: A tuple of the dictionary of the parsed recipes and a set of all resources described by the recipes.
-    """
-    recipe_book = {}
-    resources = set()
-    for l in inputstream:
-        if l[0:3] == 'END':
-            break
-        recipe = Recipe.from_str(l)
-        recipe_book[recipe.name] = recipe
-        for resource in chain(recipe._inputs, recipe._outputs):
-            resources.add(resource)
+class RecipeBook:
+    def __init__(self):
+        self._recipes: Dict[str, Recipe] = {}
+        self._resources: Set[str] = set()
+        self._defaults: Dict[str, Optional[Recipe]] = {}
 
-    recipe_names = set(recipe_book.keys())
-    if len(recipe_names & resources) > 0:
-        raise ParseError("Cannot have duplicated identifiers between recipes and resources.")
+    def add_recipes_from_stream(self, inputstream):
+        """
+        Read multiple recipes and read them into a "book", which is simply a dictionary of recipes indexed by their name.
+        This will continue reading until "END" is read.
 
-    return recipe_book, resources
+        If any new recipes have the same name as an existing recipe, the old one will be replaced.
+
+        :param inputstream: A file, stdin, or other iterable object which yields a single line at a time.
+        """
+
+        for l in inputstream:
+            if l[0:3] == 'END':
+                break
+            recipe = Recipe.from_str(l)
+
+            if recipe.name in self._resources:
+                raise ParseError("Cannot have duplicated identifiers between recipes and resources.")
+            for resource in chain(recipe.inputs(), recipe.outputs()):
+                if resource in self._recipes:
+                    raise ParseError("Cannot have duplicated identifiers between recipes and resources.")
+
+            self._recipes[recipe.name] = recipe
+            for resource in chain(recipe.inputs(), recipe.outputs()):
+                self._resources.add(resource)
+
+    def get(self, name):
+        return self._recipes.get(name)
+
+    def __getitem__(self, name):
+        return self._recipes[name]
+
+    def get_recipe_for(self, resource):
+        """
+        Find a recipe to produce a resource. If multiple recipes are present, prompt the user to decide which one
+        should be used for that resource.
+
+        :param book: Book of all available recipes.
+        :param resource: Resource to find and pick a recipe for.
+        :return: Chosen recipe to produce the resource or None if it is a raw resource that has no recipe.
+        """
+        if resource in self._defaults:
+            return self._defaults[resource]
+
+        available = list(filter(None, map(
+            lambda recipe: recipe if recipe.produces(resource) else None,
+            self._recipes.values()
+        )))
+
+        if len(available) == 1:
+            # there is exactly one recipe, so use it
+            return available[0]
+        if len(available) == 0:
+            # there is no recipe, it is a raw resource
+            return None
+
+        # there is more than one recipe, so prompt the user
+        print("Please select a recipe for '{}'".format(resource))
+        for i, o in enumerate(available):
+            print("{}: {}".format(i + 1, repr(o)))
+        choice = int(input('=> '))
+        choice = available[choice - 1]
+
+        self._defaults[resource] = choice
+        return choice
+
+    def is_recipe(self, identifier):
+        return identifier in self._recipes
+
+    def is_resource(self, identifier):
+        return identifier in self._resources
+
+    def is_raw_resource(self, resource):
+        return self.get_recipe_for(resource) is None
+
+    def recipes(self):
+        return self._recipes.keys()
+
+    def resources(self):
+        return iter(self._resources)

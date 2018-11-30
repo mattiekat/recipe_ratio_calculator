@@ -1,59 +1,26 @@
 import sys
-from recipe import Recipe, read_recipe_book
+from recipe import Recipe, RecipeBook
 import re
 from typing import Dict, Optional, Set, Tuple
 from itertools import chain
 from tabulate import tabulate
-from functools import partial
 
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)')
 Counts = Dict[str, Tuple[float, float]]
 
 
-def find_recipe(book: Dict[str, Recipe], resource: str) -> Optional[Recipe]:
-    """
-    Find a recipe to produce a resource. If multiple recipes are present, promt the user to decide which one should be
-    used for that resource.
-
-    :param book: Book of all available recipes.
-    :param resource: Resource to find and pick a recipe for.
-    :return: Chosen recipe to produce the resource or None if it is a raw resource that has no recipe.
-    """
-
-    available = list(filter(None, map(
-        lambda recipe: recipe if recipe.produces(resource) else None,
-        book.values()
-    )))
-
-    if len(available) == 1:
-        # there is exactly one recipe, so use it
-        return available[0]
-    if len(available) == 0:
-        # there is no recipe, it is a raw resource
-        return None
-
-    # there is more than one recipe, so prompt the user
-    print("Please select a recipe for '{}'".format(resource))
-    for i, o in enumerate(available):
-        print("{}: {}".format(i+1, repr(o)))
-    choice = int(input('=> '))
-    return available[choice-1]
-
-
-def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts) -> bool:
+def propagate(book: RecipeBook, recipe_batches: Counts, resource_counts: Counts) -> bool:
     """
     Construct and propagate the implications of what recipe requirements we know to determine the total requirements of
     production by updating the batches and the resulting quantities of produced resources. This needs to be called
     multiple times for some problems to find an optimal solution.
 
     :param book: Book of all available recipes.
-    :param rbr: Recipes index by resources; represents the chosen recpie to produce a given resource.
     :param recipe_batches: Counts for each of the recipe nodes.
     :param resource_counts: Counts for each of the resource nodes.
     :return: Whether any changes were made to the graph.
     """
 
-    get_recipe = partial(_get_recipe_from_rbr, book, rbr)
     pending_changes: Set[str] = set(recipe_batches.keys())
     changes_made = False
     while pending_changes:
@@ -72,7 +39,7 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
             if batches < 0.0:
                 # Cannot reduce the number of batches below the demanded amount even if this is not designated recipe
                 pass
-            elif demand <= supply or get_recipe(resource) != recipe:
+            elif demand <= supply or book.get_recipe_for(resource) != recipe:
                 # if it is already supplied, don't bother
                 # if this is not the primary recipe for the resource, do not modify the number of batches based on it
                 continue
@@ -98,7 +65,7 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
             counts = (counts[0] + recipe.consumed(resource, batches), counts[1])  # increase/decrease demand
 
             # mark it's producing recipe as needing to be updated (if not raw)
-            r2 = get_recipe(resource)
+            r2 = book.get_recipe_for(resource)
             if r2 is None:
                 # it's a raw resource, so supply = demand
                 counts = (counts[0], counts[0])
@@ -115,7 +82,7 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
     return changes_made
 
 
-def calculate(book: Dict[str, Recipe], targets: Dict[str, float]) -> Tuple[Counts, Counts]:
+def calculate(book: RecipeBook, targets: Dict[str, float]) -> Tuple[Counts, Counts]:
     """
     Calculate the number of resources and batches of each recipe are needed to meet all the user, production targets.
 
@@ -135,27 +102,23 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]) -> Tuple[Count
     # how many batches are we producing of each recipe
     recipe_batches = {}
 
-    # dictionary of (resource, recipe to make it); a cache/index of recipes by resource (rbr) we want to create.
-    # None if it is a raw resource
-    rbr: Dict[str, Optional[Recipe]] = {}
-    get_recipe = partial(_get_recipe_from_rbr, book, rbr)
-
     # set the demand for each target as the required quantities
     for target, required in targets.items():
-        if target in book:
-            # it's a recipe
+        if book.is_recipe(target):
             recipe_batches[target] = (required, 0.0)
-        else:
-            # it's a resource, find it's recipe and add that
-            recipe = get_recipe(target)
+        elif book.is_resource(target):
+            # find it's recipe and add that
+            recipe = book.get_recipe_for(target)
             if recipe is None:
                 # raw resource, not sure why it was requested, but give them what they want
                 resource_counts[target] = (required, required)
             else:
                 resource_counts[target] = (required, 0.0)
                 recipe_batches[recipe.name] = (0.0, 0.0)
+        else:
+            raise RuntimeError("Unrecognized identifier: " + target)
 
-    while propagate(book, rbr, recipe_batches, resource_counts):
+    while propagate(book, recipe_batches, resource_counts):
         # multiple iterations are required when recipes produces useful byproducts
         pass
 
@@ -173,16 +136,15 @@ def tabulate_resource_requirements(requirements: Dict[str, Tuple[float, float]],
 
 
 def main():
-    book = {}
-    resources = set()
+    book = RecipeBook()
     if len(sys.argv) > 1:
         with open(sys.argv[1]) as filestream:
-            book, resources = read_recipe_book(filestream)
-            print("Found recipes: {}".format(sorted(book.keys())))
-            print("Found resources: {}".format(sorted(resources)))
+            book.add_recipes_from_stream(filestream)
+            print("Found recipes: {}".format(sorted(book.recipes())))
+            print("Found resources: {}".format(sorted(book.resources())))
     else:
         print("Enter the list of required recipes.")
-        book, resources = read_recipe_book(sys.stdin)
+        book.add_recipes_from_stream(sys.stdin)
 
     print("Specify a quantity of a resource or recipe you would like produced and type END when done. You may also "
           "list multiple separated by comas instead and all will be considered.")
@@ -194,9 +156,10 @@ def main():
         targets = _read_request(l)
         if targets is None:
             continue
-        if any(map(lambda t: not (t in resources or t in book), chain(targets, book.keys()))):
-            print("Could not find target")
-            continue
+        for t in targets:
+            if not (book.is_recipe(t) or book.is_resource(t)):
+                print("Could not find target: " + t)
+                continue
 
         batches, quantities = calculate(book, targets)
         print(tabulate_recipe_batches(batches), end='\n\n')
@@ -212,14 +175,6 @@ def _read_request(str):
             return None
         request[m[2]] = float(m[1])
     return request
-
-
-def _get_recipe_from_rbr(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], resource: str) -> Optional[Recipe]:
-    if resource in rbr:
-        return rbr[resource]
-    recipe = find_recipe(book, resource)
-    rbr[resource] = recipe
-    return recipe
 
 
 if __name__ == '__main__':
