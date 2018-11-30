@@ -1,3 +1,12 @@
+# TODO: make results more readable
+# TODO: don't ask for recipes to produce waste byproducts
+# TODO: allow specifying default recipes in advance (separate file?)
+# TODO: implement rounding of batches and/or product demands
+# TODO: allow defining machines (for efficiency values) which have recipes they can produce
+# TODO: allow calculations with fractions instead of real numbers
+# TODO: auto-upscale to have perfect ratios
+
+
 import sys
 from recipe import Recipe, read_recipe_book
 import re
