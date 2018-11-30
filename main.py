@@ -1,4 +1,4 @@
-# TODO: make results more readable
+# TODO: update readme and docs
 # TODO: don't ask for recipes to produce waste byproducts
 # TODO: allow specifying default recipes in advance (separate file?)
 # TODO: implement rounding of batches and/or product demands
@@ -10,8 +10,9 @@
 import sys
 from recipe import Recipe, read_recipe_book
 import re
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Tuple
 from itertools import chain
+from tabulate import tabulate
 
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)')
 
@@ -179,6 +180,16 @@ def read_request(str):
     return request
 
 
+def tabulate_recipe_batches(batches: Dict[str, Tuple[float, float]]) -> str:
+    rows = sorted(map(lambda kv: [kv[0], kv[1][1], kv[1][0]], batches.items()))
+    return tabulate(rows, headers=['Recipe', 'Required', 'Requested'])
+
+
+def tabulate_resource_requirements(requirements: Dict[str, Tuple[float, float]], targets: Dict[str, float]) -> str:
+    rows = sorted(map(lambda kv: [kv[0], kv[1][1], kv[1][0], targets.get(kv[0]) or 0.0], requirements.items()))
+    return tabulate(rows, headers=['Resource', 'Produced', 'Required', 'Requested'])
+
+
 def main():
     book = {}
     resources = set()
@@ -204,9 +215,8 @@ def main():
             continue
 
         batches, quantities = calculate(book, targets)
-        print(batches)
-        print(quantities)
-        print()
+        print(tabulate_recipe_batches(batches), end='\n\n')
+        print(tabulate_resource_requirements(quantities, targets), end='\n\n')
 
 
 if __name__ == '__main__':
