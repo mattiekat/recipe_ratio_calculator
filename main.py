@@ -49,9 +49,8 @@ def get_recipe_from_rbr(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]
     return recipe
 
 
-def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts, reduce):
+def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts):
     get_recipe = partial(get_recipe_from_rbr, book, rbr)
-
     pending_changes: Set[str] = set(recipe_batches.keys())
     while pending_changes:
         # 1) choose a recipe node which needs to be updated
@@ -64,7 +63,7 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
         batches = max(0.0, base_batches[0] - base_batches[1])
 
         for resource in recipe.outputs():
-            if reduce:
+            if batches < 0.0:
                 # Cannot reduce the number of batches below the demanded amount even if this is not designated recipe
                 pass
             elif get_recipe_from_rbr(book, rbr, resource) != recipe:
@@ -73,24 +72,16 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
 
             demand, supply = resource_counts.get(resource) or (0.0, 0.0)
 
-            # If not reduce: we use the difference; other things may add to the resource so we cannot start from scratch
-            # If reduce: number we can remove is the minimum magnitude that can be removed from all resources
+            # If not reducing: use the difference; other things may add to the resource so we cannot start from scratch
+            # If reducing: number we can remove is the minimum magnitude that can be removed from all resources
             #   (which becomes the maximum since the values are negative)
             batches = max(batches, recipe.batches_required(resource, demand - supply))
 
         # the new number of batches must satisfy the minimum specified by the user
         assert base_batches[1] + batches >= base_batches[0]
-
-        if not reduce:
-            assert batches >= 0.0
-            if batches <= 0.0:
-                # don't need to add anything
-                continue
-        else:
-            assert batches <= 0.0
-            if batches >= 0.0:
-                # can't remove anything
-                continue
+        if batches == 0:
+            # nothing changes
+            continue
 
         # update the current number of batches to the new number we have deemed appropriate
         recipe_batches[recipe.name] = (base_batches[0], base_batches[1] + batches)
@@ -148,11 +139,12 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
                 resource_counts[target] = (required, 0.0)
                 recipe_batches[recipe.name] = (0.0, 0.0)
 
-    propagate(book, rbr, recipe_batches, resource_counts, False)
+    propagate(book, rbr, recipe_batches, resource_counts)
 
     # Make a second pass to reduce batch sizes to their minimums. This is required if a recipe produces as a byproduct
     # the input for another which has a different preferred recipe and both are used.
-    propagate(book, rbr, recipe_batches, resource_counts, True)
+    propagate(book, rbr, recipe_batches, resource_counts)
+    return recipe_batches, resource_counts
 
 
 def read_request(str):
