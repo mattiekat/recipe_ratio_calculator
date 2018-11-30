@@ -1,5 +1,4 @@
 # TODO: update readme and docs
-# TODO: don't ask for recipes to produce waste byproducts
 # TODO: allow specifying default recipes in advance (separate file?)
 # TODO: implement rounding of batches and/or product demands
 # TODO: allow defining machines (for efficiency values) which have recipes they can produce
@@ -64,14 +63,15 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
         batches = max(0.0, base_batches[0] - base_batches[1])
 
         for resource in recipe.outputs():
+            demand, supply = resource_counts.get(resource) or (0.0, 0.0)
+
             if batches < 0.0:
                 # Cannot reduce the number of batches below the demanded amount even if this is not designated recipe
                 pass
-            elif get_recipe(resource) != recipe:
+            elif demand <= supply or get_recipe(resource) != recipe:
+                # if it is already supplied, don't bother
                 # if this is not the primary recipe for the resource, do not modify the number of batches based on it
                 continue
-
-            demand, supply = resource_counts.get(resource) or (0.0, 0.0)
 
             # If not reducing: use the difference; other things may add to the resource so we cannot start from scratch
             # If reducing: number we can remove is the minimum magnitude that can be removed from all resources
