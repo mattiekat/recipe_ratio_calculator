@@ -28,6 +28,8 @@ END
 Enter any defaults followed by 'END'.
 iron r_iron_w
 END
+Enter any crafters followed by 'END'.
+END
 Specify a quantity of a resource or recipe you would like produced and type END when done.
 => 12 planks
 Recipe      Required    Requested
@@ -83,16 +85,21 @@ To run this script, you will need [Python v3.6](https://www.python.org/downloads
 [tabulate](https://pypi.org/project/tabulate/) package.
 
 ## Usage
-You have two primary options right now for execution, the first is to define a recipe book in a plain-text document, and
-the second is to input it into standard input (aka lots-o-typing).
+You have two primary options right now for execution, the first is to define the recipe book in a plain-text document
+and also the defaults and crafters specifications. The second is to input them into standard input (aka lots-o-typing).
+In either case, read on for more information about how to specify recipes, defaults, and crafters.
 
-If you use a file to specify the recipes, simply start the application by running `python main.py path/to/file.txt` in
-the terminal if you are on a cool operating system and the command prompt if you are not. If you do not use a file, then
-simply run `python main.py` and you will first be asked to enter in at minimum the relevant recipes to whatever
-questions you will ask. In either case, read the recipe definition spec for more information.
+The parameter order is
+1) recipes
+2) default recipes
+3) recipe crafters
 
-After the recipes have been defined, enter queries in the form `count identifier[, count identifier[..]]`. Say I want
-to create 10 piston units and 64 wood planks, then I would enter `16 piston, 64 planks`.
+If you wish to specify 1 and 2 in a file that works, but not 1 and 3 (for now). Any which are not specified will be
+promoted for when you run the application, to which you may safely enter 'END' for more basic cases. 
+
+After initializing everything, enter queries in the form `count identifier[, count identifier[..]]`. Say I want
+to create 10 piston units and 64 wood planks, then I would enter `16 piston, 64 planks`. There is a more complete
+example below.
 
 ### Understanding User Targets
 Note that `count` changes meaning depending on whether the `identifier` specifies a recipe or a resource.
@@ -119,16 +126,15 @@ A recipe has the following components:
 1) Name - What we will refer to our recipe as
 2) Inputs - What resources are consumed by the recipe
 3) Outputs - What resources are produced by the recipe
-4) Efficiency - How fast the machine which makes it operates
-5) Duration - How long it takes to produce the recipe
+4) Duration - How long it takes to produce the recipe
 
-Depending on which view of resources you take, efficiency and duration may or may not hold meaning. If they are both 1.0
-(or left out as they default to 1.0), then it will be equivalent to single batch calculations, and if they are not, it
-will be computing the items per unit time required to satisfy the flows.
+Depending on which view of resources you take, duration may or may not hold meaning. If it is 1.0
+(or left out as it defaults to 1.0), then it will be equivalent to single batch calculations, and if it is not, the
+system will be computing the items per unit time required to satisfy the flows.
 
 A recipe book of very different types of recipes:
 ```
-stealfurnace_ironplate {1 ironore} -> {1 ironplate} * 2 / 3.5
+stealfurnace_ironplate {1 ironore} -> {1 ironplate} / 3.5
 r_piston {3 planks, 4 cobblestone, 1 redstone, 1 iron} -> {1 piston}
 factory_textile_heavy_fabric {1 fiber, 1 dye, 1 leather} -> {1 heavy_fabric} / 40
 collector_water {} -> {1 water} / 10
@@ -160,6 +166,29 @@ piston r_piston
 END
 ```
 
+## Defining Crafters
+In some games like Factorio, it makes sense to define not only recipes, but what crafts them as it alters the time
+required to produce the resources.
+
+To do this, include an additional file with each crafter defined as `crafter_name efficency recipe1, recipe2, ...` with
+the end of file/input being denoted with `END`.
+
+For example:
+```
+assembly_machine_1 0.5             r_copper_cable, r_iron_gear
+assembly_machine_2 0.75            r_assembly_machine, r_gcirc
+assembly_machine_3 1.25
+stone_furnace 1.0
+steel_furnace 2.0                  r_copperp, r_ironp
+electric_furnace 3.0
+END
+
+```
+
+In the above example, there are several crafters which have no recipes defined for them, this allows the recipes to be
+easily moved around as the game progresses and the preferred crafters change. It also allows for having a blank/default
+template for a game to prevent you from having to look up all the crafters and their speeds.   
+
 ## Contributions
 I would love to add recipe books for games to prevent everyone needing to create their own. Please make a pull request
 with any additions or corrections and I would be very grateful.
@@ -167,7 +196,5 @@ with any additions or corrections and I would be very grateful.
 ## Future Work
 - allow rounding up of batches and/or product demands to integer values
 - allow calculations with rational numbers instead of only real values
-- allow defining machines (for efficiency values) which have recipes they can produce
-- allow calculations with fractions instead of real numbers
 - allow auto-upscaling of a recipe get perfect ratios
 - create graph output of the final recipe

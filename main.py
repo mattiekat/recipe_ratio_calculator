@@ -1,8 +1,7 @@
 import sys
-from recipe import Recipe, RecipeBook
+from recipe import RecipeBook
 import re
-from typing import Dict, Optional, Set, Tuple
-from itertools import chain
+from typing import Dict, Set, Tuple
 from tabulate import tabulate
 
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)\s*$')
@@ -125,9 +124,18 @@ def calculate(book: RecipeBook, targets: Dict[str, float]) -> Tuple[Counts, Coun
     return recipe_batches, resource_counts
 
 
-def tabulate_recipe_batches(batches: Dict[str, Tuple[float, float]]) -> str:
-    rows = sorted(map(lambda kv: [kv[0], kv[1][1], kv[1][0]], batches.items()))
-    return tabulate(rows, headers=['Recipe', 'Required', 'Requested'])
+def tabulate_recipe_batches(book: RecipeBook, batches: Dict[str, Tuple[float, float]]) -> str:
+    if book.crafters_defined():
+        rows = sorted(map(lambda kv: [
+            book.get_crafter_for(kv[0]) or 'Default',
+            kv[0], kv[1][1], kv[1][0]
+        ], batches.items()))
+        return tabulate(rows, headers=['Crafter', 'Recipe', 'Required', 'Requested'])
+    else:
+        rows = sorted(map(lambda kv: [
+            kv[0], kv[1][1], kv[1][0]
+        ], batches.items()))
+        return tabulate(rows, headers=['Recipe', 'Required', 'Requested'])
 
 
 def tabulate_resource_requirements(requirements: Dict[str, Tuple[float, float]], targets: Dict[str, float]) -> str:
@@ -158,6 +166,13 @@ def main():
         print("Enter any defaults followed by 'END'.")
         book.set_defaults_from_stream(sys.stdin)
 
+    if len(sys.argv) > 3:
+        with open(sys.argv[3]) as filestream:
+            book.set_crafters_from_stream(filestream)
+    else:
+        print("Enter any crafters followed by 'END'.")
+        book.set_crafters_from_stream(sys.stdin)
+
     print("Specify a quantity of a resource or recipe you would like produced and type END when done.")
     while True:
         l = input('=> ')
@@ -177,7 +192,7 @@ def main():
             continue
 
         batches, quantities = calculate(book, targets)
-        print(tabulate_recipe_batches(batches), end='\n\n')
+        print(tabulate_recipe_batches(book, batches), end='\n\n')
         print(tabulate_resource_requirements(quantities, targets), end='\n\n')
 
 
