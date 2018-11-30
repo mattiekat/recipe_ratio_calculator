@@ -131,8 +131,13 @@ def tabulate_recipe_batches(batches: Dict[str, Tuple[float, float]]) -> str:
 
 
 def tabulate_resource_requirements(requirements: Dict[str, Tuple[float, float]], targets: Dict[str, float]) -> str:
-    rows = sorted(map(lambda kv: [kv[0], kv[1][1], kv[1][0], targets.get(kv[0]) or 0.0], requirements.items()))
-    return tabulate(rows, headers=['Resource', 'Produced', 'Required', 'Requested'])
+    rows = sorted(map(lambda kv: [
+        kv[0],
+        kv[1][0] - (targets.get(kv[0]) or 0.0),
+        targets.get(kv[0]) or 0.0,
+        kv[1][1] - kv[1][0]
+    ], requirements.items()))
+    return tabulate(rows, headers=['Resource', 'UsednProd', 'Requested', 'Excess'])
 
 
 def main():
@@ -150,11 +155,10 @@ def main():
         with open(sys.argv[2]) as filestream:
             book.set_defaults_from_stream(filestream)
     else:
-        print("Enter any default recipes followed by 'END'.")
-        book.add_recipes_from_stream(sys.stdin)
+        print("Enter any defaults followed by 'END'.")
+        book.set_defaults_from_stream(sys.stdin)
 
-    print("Specify a quantity of a resource or recipe you would like produced and type END when done. You may also "
-          "list multiple separated by comas instead and all will be considered.")
+    print("Specify a quantity of a resource or recipe you would like produced and type END when done.")
     while True:
         l = input('=> ')
         if l[0:3] == 'END':
@@ -163,10 +167,14 @@ def main():
         targets = _read_request(l)
         if targets is None:
             continue
+
+        invalid = False
         for t in targets:
             if not (book.is_recipe(t) or book.is_resource(t)):
                 print("Could not find target: " + t)
-                continue
+                invalid = True
+        if invalid:
+            continue
 
         batches, quantities = calculate(book, targets)
         print(tabulate_recipe_batches(batches), end='\n\n')

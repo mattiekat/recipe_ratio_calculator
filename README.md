@@ -16,6 +16,68 @@ tiers of recipes added by mods. *Yes, I am looking at you Greg and Bob.*
 
 These reasons all (eventually) lead me to create this generic solver for the recipe-ratio class of problems.
 
+## Demo Session
+```
+$ python main.py
+Enter recipes followed by 'END'.
+r_piston {3 planks, 4 cobblestone, 1 redstone, 1 iron} -> {1 piston}
+r_planks {1 wood} -> {4 planks}
+r_iron_c {8 iron_ore, 1 coal} -> {8 iron}
+r_iron_w {3 iron_ore, 2 planks} -> {3 iron}
+END
+Enter any defaults followed by 'END'.
+iron r_iron_w
+END
+Specify a quantity of a resource or recipe you would like produced and type END when done.
+=> 12 planks
+Recipe      Required    Requested
+--------  ----------  -----------
+r_planks           3            0
+
+Resource      UsednProd    Requested    Excess
+----------  -----------  -----------  --------
+planks                0           12         0
+wood                  3            0         0
+
+=> 64 piston
+Recipe      Required    Requested
+--------  ----------  -----------
+r_iron_w     21.3333            0
+r_piston     64                 0
+r_planks     58.6667            0
+
+Resource       UsednProd    Requested    Excess
+-----------  -----------  -----------  --------
+cobblestone     256                 0         0
+iron             64                 0         0
+iron_ore         64                 0         0
+piston            0                64         0
+planks          234.667             0         0
+redstone         64                 0         0
+wood             58.6667            0         0
+
+=> 64 piston, 32 plank, 4 iron
+Could not find target: plank
+=> 64 piston, 32 planks, 4 iron
+Recipe      Required    Requested
+--------  ----------  -----------
+r_iron_w     22.6667            0
+r_piston     64                 0
+r_planks     67.3333            0
+
+Resource       UsednProd    Requested    Excess
+-----------  -----------  -----------  --------
+cobblestone     256                 0         0
+iron             64                 4         0
+iron_ore         68                 0         0
+piston            0                64         0
+planks          237.333            32         0
+redstone         64                 0         0
+wood             67.3333            0         0
+
+=> END
+```
+
 ## Installation
 To run this script, you will need [Python v3.6](https://www.python.org/downloads/) or later, along with the
 [tabulate](https://pypi.org/project/tabulate/) package.
