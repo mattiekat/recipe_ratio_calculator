@@ -52,6 +52,12 @@ class Recipe:
 
         return Recipe(name, inputs, outputs, efficiency, duration)
 
+    def produces(self, resource: str) -> bool:
+        return resource in self._outputs
+
+    def requires(self, resource: str) -> bool:
+        return resource in self._inputs
+
     def inputs(self):
         return self._inputs.keys()
 
@@ -83,7 +89,7 @@ class Recipe:
     def __repr__(self):
         def format_components(comps):
             acc = ''
-            for i, (c, n) in enumerate(comps):
+            for i, (c, n) in enumerate(comps.items()):
                 if i > 0: acc += ', '
                 acc += '{} {}'.format(n, c)
             return acc
@@ -108,12 +114,12 @@ def read_recipe_book(inputstream):
         recipe = Recipe.from_str(l)
         recipe_book[recipe.name] = recipe
         for resource in chain(recipe._inputs, recipe._outputs):
-            resources.add(resource.name)
+            resources.add(resource)
 
     recipe_names = set(recipe_book.keys())
     if len(recipe_names & resources) > 0:
         raise ParseError("Cannot have duplicated identifiers between recipes and resources.")
 
-    print("Found recipes: {}".format(recipe_names))
-    print("Found resources: {}".format(resources))
+    print("Found recipes: {}".format(sorted(recipe_names)))
+    print("Found resources: {}".format(sorted(resources)))
     return recipe_book, resources

@@ -4,14 +4,14 @@ import re
 from typing import Dict, Optional, Set
 from itertools import chain
 
-request_pattern = re.compile('\s*(\d+(?:\.\d+))\s*([a-zA-Z_]\w*)')
+request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)')
 
 
 def find_recipe(book: Dict[str, Recipe], resource: str) -> Optional[Recipe]:
-    available = list(filter(
-        lambda recipe: resource in recipe.outputs,
+    available = list(filter(None, map(
+        lambda recipe: recipe if recipe.produces(resource) else None,
         book.values()
-    ))
+    )))
 
     if len(available) == 1:
         # there is exactly one recipe, so use it
@@ -55,8 +55,8 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
     pending_changes: Set[str] = set()
 
     # set the demand for each target as the required quantities
-    for target, required in targets:
-        if target in recipe_batches:
+    for target, required in targets.items():
+        if target in book:
             # it's a recipe
             recipe_batches[target] = (required, 0.0)
             pending_changes.add(target)
@@ -68,7 +68,7 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
                 resource_counts[target] = (required, required)
             else:
                 resource_counts[target] = (required, 0.0)
-                recipe_batches[target] = (0.0, 0.0)
+                recipe_batches[recipe.name] = (0.0, 0.0)
                 pending_changes.add(recipe.name)
 
     while pending_changes:
@@ -170,7 +170,6 @@ def read_request(str):
     return request
 
 
-
 def main():
     book = {}
     resources = set()
@@ -184,7 +183,7 @@ def main():
     print("Specify a quantity of a resource or recipe you would like produced and type END when done. You may also "
           "list multiple separated by comas instead and all will be considered.")
     while True:
-        l = input()
+        l = input('=> ')
         if l[0:3] == 'END':
             break
 
@@ -196,6 +195,9 @@ def main():
             continue
 
         batches, quantities = calculate(book, targets)
+        print(batches)
+        print(quantities)
+        print()
 
 
 if __name__ == '__main__':
