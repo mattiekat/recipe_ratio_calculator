@@ -1,0 +1,4 @@
+r_piston {3 planks, 4 cobblestone, 1 redstone, 1 iron} -> {1 piston}
+r_planks {1 wood} -> {4 planks}
+r_iron {8 iron_ore, 1 coal} -> {8 iron}
+END
