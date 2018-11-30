@@ -49,9 +49,10 @@ def get_recipe_from_rbr(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]
     return recipe
 
 
-def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts):
+def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts) -> bool:
     get_recipe = partial(get_recipe_from_rbr, book, rbr)
     pending_changes: Set[str] = set(recipe_batches.keys())
+    changes_made = False
     while pending_changes:
         # 1) choose a recipe node which needs to be updated
         recipe = book[pending_changes.pop()]
@@ -66,7 +67,7 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
             if batches < 0.0:
                 # Cannot reduce the number of batches below the demanded amount even if this is not designated recipe
                 pass
-            elif get_recipe_from_rbr(book, rbr, resource) != recipe:
+            elif get_recipe(resource) != recipe:
                 # if this is not the primary recipe for the resource, do not modify the number of batches based on it
                 continue
 
@@ -82,6 +83,7 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
         if batches == 0:
             # nothing changes
             continue
+        changes_made = True
 
         # update the current number of batches to the new number we have deemed appropriate
         recipe_batches[recipe.name] = (base_batches[0], base_batches[1] + batches)
@@ -105,6 +107,8 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
             counts = resource_counts.get(resource) or (0.0, 0.0)
             counts = (counts[0], counts[1] + recipe.produced(resource, batches))  # increase/decrease supply
             resource_counts[resource] = counts
+
+    return changes_made
 
 
 def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
@@ -139,11 +143,10 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
                 resource_counts[target] = (required, 0.0)
                 recipe_batches[recipe.name] = (0.0, 0.0)
 
-    propagate(book, rbr, recipe_batches, resource_counts)
+    while propagate(book, rbr, recipe_batches, resource_counts):
+        # multiple iterations are required when recipes produces useful byproducts
+        pass
 
-    # Make a second pass to reduce batch sizes to their minimums. This is required if a recipe produces as a byproduct
-    # the input for another which has a different preferred recipe and both are used.
-    propagate(book, rbr, recipe_batches, resource_counts)
     return recipe_batches, resource_counts
 
 
