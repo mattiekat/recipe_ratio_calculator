@@ -5,6 +5,7 @@
 # TODO: allow defining machines (for efficiency values) which have recipes they can produce
 # TODO: allow calculations with fractions instead of real numbers
 # TODO: auto-upscale to have perfect ratios
+# TODO: create graph output of the final recipe
 
 
 import sys
@@ -13,8 +14,10 @@ import re
 from typing import Dict, Optional, Set, Tuple
 from itertools import chain
 from tabulate import tabulate
+from functools import partial
 
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)')
+Counts = Dict[str, Tuple[float, float]]
 
 
 def find_recipe(book: Dict[str, Recipe], resource: str) -> Optional[Recipe]:
@@ -38,76 +41,64 @@ def find_recipe(book: Dict[str, Recipe], resource: str) -> Optional[Recipe]:
     return available[choice-1]
 
 
-def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
-    # book is the list of recipes available for use
-    # targets represent mandatory amounts
+def get_recipe_from_rbr(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], resource: str) -> Optional[Recipe]:
+    if resource in rbr:
+        return rbr[resource]
+    recipe = find_recipe(book, resource)
+    rbr[resource] = recipe
+    return recipe
 
-    # the total quantity of an ingredient/resource
-    #       first part is the "demand", i.e. how much is required
-    #       second part is the "supply", i.e. how much will be produced (may be greater than demand if it's a byproduct)
-    resource_counts: Dict[str, (float, float)] = {}
 
-    # how many batches are we producing of each recipe
-    recipe_batches: Dict[str, (float, float)] = {}
+def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts, reduce):
+    get_recipe = partial(get_recipe_from_rbr, book, rbr)
 
-    # dictionary of (resource, recipe to make it); a cache/index of recipes by resource (rbr) we want to create.
-    # None if it is a raw resource
-    rbr: Dict[str, Optional[Recipe]] = {}
-
-    def get_recipe(resource: str) -> Optional[Recipe]:
-        if resource in rbr:
-            return rbr[resource]
-        recipe = find_recipe(book, resource)
-        rbr[resource] = recipe
-        return recipe
-
-    # recipes which need to be updated
-    pending_changes: Set[str] = set()
-
-    # set the demand for each target as the required quantities
-    for target, required in targets.items():
-        if target in book:
-            # it's a recipe
-            recipe_batches[target] = (required, 0.0)
-            pending_changes.add(target)
-        else:
-            # it's a resource, find it's recipe and add that
-            recipe = get_recipe(target)
-            if recipe is None:
-                # raw resource, not sure why it was requested, but give them what they want
-                resource_counts[target] = (required, required)
-            else:
-                resource_counts[target] = (required, 0.0)
-                recipe_batches[recipe.name] = (0.0, 0.0)
-                pending_changes.add(recipe.name)
-
+    pending_changes: Set[str] = set(recipe_batches.keys())
     while pending_changes:
         # 1) choose a recipe node which needs to be updated
         recipe = book[pending_changes.pop()]
 
         # 2) find the total number of batches needed to produce the demanded output (for which it is the recipe of)
         base_batches = recipe_batches.get(recipe.name) or (0.0, 0.0)
-        # the user may request a minimum number of batches, so include them
-        batches = max(0.0, base_batches[0] - base_batches[1])  # number of additional batches
+        # If not reducing: the user may request a minimum number of batches (will be >= 0)
+        # If reducing: max number of batches we can remove (will be <= 0) while preserving the user requested min
+        batches = max(0.0, base_batches[0] - base_batches[1])
 
         for resource in recipe.outputs():
-            if get_recipe(resource) != recipe:
+            if reduce:
+                # Cannot reduce the number of batches below the demanded amount even if this is not designated recipe
+                pass
+            elif get_recipe_from_rbr(book, rbr, resource) != recipe:
                 # if this is not the primary recipe for the resource, do not modify the number of batches based on it
                 continue
 
             demand, supply = resource_counts.get(resource) or (0.0, 0.0)
-            if demand <= supply:
-                continue
 
-            # we use the difference, because other things may add to the resource so we cannot start from scratch
+            # If not reduce: we use the difference; other things may add to the resource so we cannot start from scratch
+            # If reduce: number we can remove is the minimum magnitude that can be removed from all resources
+            #   (which becomes the maximum since the values are negative)
             batches = max(batches, recipe.batches_required(resource, demand - supply))
 
+        # the new number of batches must satisfy the minimum specified by the user
+        assert base_batches[1] + batches >= base_batches[0]
+
+        if not reduce:
+            assert batches >= 0.0
+            if batches <= 0.0:
+                # don't need to add anything
+                continue
+        else:
+            assert batches <= 0.0
+            if batches >= 0.0:
+                # can't remove anything
+                continue
+
+        # update the current number of batches to the new number we have deemed appropriate
         recipe_batches[recipe.name] = (base_batches[0], base_batches[1] + batches)
 
-        # 3) update the input resources to reflect the new demands
+        # 3) update the input resources to reflect the new demand
         for resource in recipe.inputs():
             counts = resource_counts.get(resource) or (0.0, 0.0)
-            counts = (counts[0] + recipe.consumed(resource, batches), counts[1])  # increase demand
+            counts = (counts[0] + recipe.consumed(resource, batches), counts[1])  # increase/decrease demand
 
             # mark it's producing recipe as needing to be updated (if not raw)
             r2 = get_recipe(resource)
@@ -121,52 +112,47 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
         # 4) update the output resources to reflect the new supply
         for resource in recipe.outputs():
             counts = resource_counts.get(resource) or (0.0, 0.0)
-            counts = (counts[0], counts[1] + recipe.produced(resource, batches))  # increase supply
+            counts = (counts[0], counts[1] + recipe.produced(resource, batches))  # increase/decrease supply
             resource_counts[resource] = counts
+
+
+def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
+    # book is the list of recipes available for use
+    # targets represent mandatory amounts
+
+    # the total quantity of an ingredient/resource
+    #       first part is the "demand", i.e. how much is required
+    #       second part is the "supply", i.e. how much will be produced (may be greater than demand if it's a byproduct)
+    resource_counts = {}
+
+    # how many batches are we producing of each recipe
+    recipe_batches = {}
+
+    # dictionary of (resource, recipe to make it); a cache/index of recipes by resource (rbr) we want to create.
+    # None if it is a raw resource
+    rbr: Dict[str, Optional[Recipe]] = {}
+    get_recipe = partial(get_recipe_from_rbr, book, rbr)
+
+    # set the demand for each target as the required quantities
+    for target, required in targets.items():
+        if target in book:
+            # it's a recipe
+            recipe_batches[target] = (required, 0.0)
+        else:
+            # it's a resource, find it's recipe and add that
+            recipe = get_recipe(target)
+            if recipe is None:
+                # raw resource, not sure why it was requested, but give them what they want
+                resource_counts[target] = (required, required)
+            else:
+                resource_counts[target] = (required, 0.0)
+                recipe_batches[recipe.name] = (0.0, 0.0)
+
+    propagate(book, rbr, recipe_batches, resource_counts, False)
 
     # Make a second pass to reduce batch sizes to their minimums. This is required if a recipe produces as a byproduct
     # the input for another which has a different preferred recipe and both are used.
-    pending_changes = set(recipe_batches.keys())
-    while pending_changes:
-        recipe = book[pending_changes.pop()]
-        base_batches = recipe_batches[recipe.name]
-        batches = base_batches[1] - base_batches[0]  # max number of batches we can remove
-
-        # number we can remove is the minimum amount that can be removed from all resources
-        for resource in recipe.outputs():
-            demand, supply = resource_counts[resource]
-            batches = min(batches, recipe.batches_required(resource, supply - demand))
-
-        assert batches >= 0.0
-        assert base_batches[0] <= base_batches[1] - batches
-
-        if batches <= 0.0:
-            # can't remove anything
-            continue
-
-        recipe_batches[recipe.name] = (base_batches[0], base_batches[1] - batches)
-
-        # update all inputs by reducing the demand
-        for resource in recipe.inputs():
-            counts = resource_counts[resource]
-            counts = (counts[0] - recipe.consumed(resource, batches), counts[1])
-
-            # mark it's producing recipe as needing to be updated (if not raw)
-            r2 = get_recipe(resource)
-            if r2 is None:
-                # it's a raw resource, so supply = demand
-                counts = (counts[0], counts[0])
-            else:
-                pending_changes.add(r2.name)
-            resource_counts[resource] = counts
-
-        # update all outputs by reducing the supply
-        for resource in recipe.outputs():
-            counts = resource_counts[resource]
-            counts = (counts[0], counts[1] - recipe.produced(resource, batches))
-            resource_counts[resource] = counts
-
-    return recipe_batches, resource_counts
+    propagate(book, rbr, recipe_batches, resource_counts, True)
 
 
 def read_request(str):
