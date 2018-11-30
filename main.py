@@ -1,12 +1,3 @@
-# TODO: update readme and docs
-# TODO: allow specifying default recipes in advance (separate file?)
-# TODO: implement rounding of batches and/or product demands
-# TODO: allow defining machines (for efficiency values) which have recipes they can produce
-# TODO: allow calculations with fractions instead of real numbers
-# TODO: auto-upscale to have perfect ratios
-# TODO: create graph output of the final recipe
-
-
 import sys
 from recipe import Recipe, read_recipe_book
 import re
@@ -20,6 +11,15 @@ Counts = Dict[str, Tuple[float, float]]
 
 
 def find_recipe(book: Dict[str, Recipe], resource: str) -> Optional[Recipe]:
+    """
+    Find a recipe to produce a resource. If multiple recipes are present, promt the user to decide which one should be
+    used for that resource.
+
+    :param book: Book of all available recipes.
+    :param resource: Resource to find and pick a recipe for.
+    :return: Chosen recipe to produce the resource or None if it is a raw resource that has no recipe.
+    """
+
     available = list(filter(None, map(
         lambda recipe: recipe if recipe.produces(resource) else None,
         book.values()
@@ -40,16 +40,20 @@ def find_recipe(book: Dict[str, Recipe], resource: str) -> Optional[Recipe]:
     return available[choice-1]
 
 
-def get_recipe_from_rbr(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], resource: str) -> Optional[Recipe]:
-    if resource in rbr:
-        return rbr[resource]
-    recipe = find_recipe(book, resource)
-    rbr[resource] = recipe
-    return recipe
-
-
 def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_batches: Counts, resource_counts: Counts) -> bool:
-    get_recipe = partial(get_recipe_from_rbr, book, rbr)
+    """
+    Construct and propagate the implications of what recipe requirements we know to determine the total requirements of
+    production by updating the batches and the resulting quantities of produced resources. This needs to be called
+    multiple times for some problems to find an optimal solution.
+
+    :param book: Book of all available recipes.
+    :param rbr: Recipes index by resources; represents the chosen recpie to produce a given resource.
+    :param recipe_batches: Counts for each of the recipe nodes.
+    :param resource_counts: Counts for each of the resource nodes.
+    :return: Whether any changes were made to the graph.
+    """
+
+    get_recipe = partial(_get_recipe_from_rbr, book, rbr)
     pending_changes: Set[str] = set(recipe_batches.keys())
     changes_made = False
     while pending_changes:
@@ -111,9 +115,17 @@ def propagate(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], recipe_
     return changes_made
 
 
-def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
-    # book is the list of recipes available for use
-    # targets represent mandatory amounts
+def calculate(book: Dict[str, Recipe], targets: Dict[str, float]) -> Tuple[Counts, Counts]:
+    """
+    Calculate the number of resources and batches of each recipe are needed to meet all the user, production targets.
+
+    Note: Production targets for resources define how many of the resource must be "left over" (i.e. not consumed by
+    other recipes) while production targets for recipes define the minimum number of batches which must be run.
+
+    :param book: Book of all available recipes.
+    :param targets: Production targets specified by the user.
+    :return: The total recipe batches and resource counts.
+    """
 
     # the total quantity of an ingredient/resource
     #       first part is the "demand", i.e. how much is required
@@ -126,7 +138,7 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
     # dictionary of (resource, recipe to make it); a cache/index of recipes by resource (rbr) we want to create.
     # None if it is a raw resource
     rbr: Dict[str, Optional[Recipe]] = {}
-    get_recipe = partial(get_recipe_from_rbr, book, rbr)
+    get_recipe = partial(_get_recipe_from_rbr, book, rbr)
 
     # set the demand for each target as the required quantities
     for target, required in targets.items():
@@ -150,17 +162,6 @@ def calculate(book: Dict[str, Recipe], targets: Dict[str, float]):
     return recipe_batches, resource_counts
 
 
-def read_request(str):
-    request = {}
-    for part in str.split(','):
-        m = request_pattern.match(part)
-        if m is None:
-            print("Invalid request format")
-            return None
-        request[m[2]] = float(m[1])
-    return request
-
-
 def tabulate_recipe_batches(batches: Dict[str, Tuple[float, float]]) -> str:
     rows = sorted(map(lambda kv: [kv[0], kv[1][1], kv[1][0]], batches.items()))
     return tabulate(rows, headers=['Recipe', 'Required', 'Requested'])
@@ -177,6 +178,8 @@ def main():
     if len(sys.argv) > 1:
         with open(sys.argv[1]) as filestream:
             book, resources = read_recipe_book(filestream)
+            print("Found recipes: {}".format(sorted(book.keys())))
+            print("Found resources: {}".format(sorted(resources)))
     else:
         print("Enter the list of required recipes.")
         book, resources = read_recipe_book(sys.stdin)
@@ -188,7 +191,7 @@ def main():
         if l[0:3] == 'END':
             break
 
-        targets = read_request(l)
+        targets = _read_request(l)
         if targets is None:
             continue
         if any(map(lambda t: not (t in resources or t in book), chain(targets, book.keys()))):
@@ -198,6 +201,25 @@ def main():
         batches, quantities = calculate(book, targets)
         print(tabulate_recipe_batches(batches), end='\n\n')
         print(tabulate_resource_requirements(quantities, targets), end='\n\n')
+
+
+def _read_request(str):
+    request = {}
+    for part in str.split(','):
+        m = request_pattern.match(part)
+        if m is None:
+            print("Invalid request format")
+            return None
+        request[m[2]] = float(m[1])
+    return request
+
+
+def _get_recipe_from_rbr(book: Dict[str, Recipe], rbr: Dict[str, Optional[Recipe]], resource: str) -> Optional[Recipe]:
+    if resource in rbr:
+        return rbr[resource]
+    recipe = find_recipe(book, resource)
+    rbr[resource] = recipe
+    return recipe
 
 
 if __name__ == '__main__':
