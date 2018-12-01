@@ -4,7 +4,7 @@ from typing import Dict, Set, Optional
 
 from tabulate import tabulate
 
-from calculator import ParseError, Counts, Targets, asfrac
+from calculator import ParseError, Targets, asfrac
 from calculator.recipe import Recipe, Crafter
 
 
@@ -61,6 +61,34 @@ class Calculations:
             kv[1][1] - kv[1][0]
         ], self.resources.items()))
         return tabulate(rows, headers=['Resource', 'UsednProd', 'Requested', 'Excess'], **kwargs)
+
+    def graph_representation(self):
+        """
+        Construct a dot graph representation of these results.
+        :return: The dot graph
+        """
+        from pydot import Dot, Edge, Node
+
+        g = Dot()
+
+        for resource, quantity in self.resources.items():
+            g.add_node(Node('i_' + resource, label='{:.3} {}'.format(quantity[1], resource), style='dashed'))
+        for recipe, batches in self.recipes.items():
+            g.add_node(Node('r_' + recipe, label='{:.3} {}'.format(batches[1], recipe), shape='box'))
+
+            r: Recipe = self.book[recipe]
+            for output in r.outputs():
+                weight = r.produced(output, batches[1])
+                g.add_edge(Edge('r_' + recipe, 'i_' + output, label='{:.3}'.format(weight), weight=weight))
+            for input in r.inputs():
+                weight = r.consumed(input, batches[1])
+                g.add_edge(Edge('i_' + input, 'r_' + recipe, label='{:.3}'.format(weight), weight=weight))
+
+        return g
+
+    def write_graph(self, path='out', fmt='png'):
+        g = self.graph_representation()
+        g.write('{}.{}'.format(path, fmt), format=fmt)
 
 
 class RecipeBook:

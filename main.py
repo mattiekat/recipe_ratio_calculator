@@ -44,6 +44,7 @@ def main():
         results = book.calculate(targets)
         print(results.tabulate_recipes(), end='\n\n')
         print(results.tabulate_resources(), end='\n\n')
+        results.write_graph()
 
 
 def _read_request(str):

@@ -8,7 +8,8 @@ This is a utility designed to help with the computation of common recipe-related
 
 Admittedly, many of the above challenges already have domain-specific solutions, so why bother?
  
-1) There are new games being released regularly and having a core framework for the algorithm will prevent the problem from needing to be re-solved over and over.
+1) There are new games being released regularly and having a core framework for the algorithm will prevent the problem
+from needing to be re-solved over and over.
 
 2) Even those games for which there is a solver already available, it often does not support the incredibly convoluted
 tiers of recipes added by mods. *Yes, I am looking at you Greg and Bob.* 
@@ -69,8 +70,12 @@ redstone         64                 0         0
 ```
 
 ## Installation
-To run this script, you will need [Python v3.6](https://www.python.org/downloads/) or later, along with
-[tabulate](https://pypi.org/project/tabulate/) package and [PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation).
+To run this script, you will need:
+- [Python v3.6](https://www.python.org/downloads/) (or later)
+- [tabulate](https://pypi.org/project/tabulate/)
+- [PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation)
+- [pydot](https://pypi.org/project/pydot/)
+- [graphiz](https://graphviz.org/download/)
 
 ## Usage
 You will need a recipe book defined for your domain, see the below schema section for more information on how to do
@@ -159,5 +164,4 @@ I would love to add recipe books for games to prevent everyone needing to create
 with any additions or corrections and I would be very grateful.
 
 ## Future Work
-- create graph output of the final recipe
 - better CLI

@@ -116,7 +116,7 @@ class Recipe:
             e = asfrac(e)
             d = asfrac(d)
 
-        return (o) * (e / d) * batches
+        return o * (e / d) * batches
 
     def consumed(self, resource: str, batches: Union[float, Fraction]=1.0) -> Union[float, Fraction]:
         """
