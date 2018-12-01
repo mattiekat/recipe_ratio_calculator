@@ -1,10 +1,66 @@
-from typing import Dict, Set, Optional
-from math import ceil, floor
 from fractions import Fraction
+from math import ceil, floor
+from typing import Dict, Set, Optional
 
-from calculator import ParseError, Counts, Calculations, Targets, asfrac
-from calculator.crafter import Crafter
-from calculator.recipe import Recipe
+from tabulate import tabulate
+
+from calculator import ParseError, Counts, Targets, asfrac
+from calculator.recipe import Recipe, Crafter
+
+
+class Calculations:
+    """
+    The solved graph representing the total number of batches and resource costs.
+    """
+
+    def __init__(self, book, targets, recipes=None, resources=None):
+        """
+        :param book: The recipe book this solution is based on.
+        :param recipes: Number of batches each recipe is run.
+        :param resources: Quantity of each resource required.
+        """
+        self.book = book
+        self.targets = targets
+
+        # the total quantity of an ingredient/resource
+        #       first part is the "demand", i.e. how much is required
+        #       second part is the "supply", i.e. how much will be produced (may be greater than demand if it's a byproduct)
+        self.recipes = recipes or {}
+
+        # how many batches are we producing of each recipe
+        self.resources = resources or {}
+
+    def tabulate_recipes(self, **kwargs) -> str:
+        """
+        Create an ascii table of the required recipe batches to accomplish the targets.
+        :param kwargs: Additional arguments to pass to tabulate.
+        :return: String of the ascii table.
+        """
+        if self.book.crafters_defined():
+            rows = sorted(map(lambda kv: [
+                self.book.get_crafter_for(kv[0]) or 'Default',
+                kv[0], kv[1][1], kv[1][0]
+            ], self.recipes.items()))
+            return tabulate(rows, headers=['Crafter', 'Recipe', 'Required', 'Requested'], **kwargs)
+        else:
+            rows = sorted(map(lambda kv: [
+                kv[0], kv[1][1], kv[1][0]
+            ], self.recipes.items()))
+            return tabulate(rows, headers=['Recipe', 'Required', 'Requested'], **kwargs)
+
+    def tabulate_resources(self, **kwargs) -> str:
+        """
+        Create an ascii table of the quantities of required resources to accomplish the targets.
+        :param kwargs: Additional arguments to pass to tabulate.
+        :return: String of the ascii table.
+        """
+        rows = sorted(map(lambda kv: [
+            kv[0],
+            kv[1][0] - (self.targets.get(kv[0]) or 0.0),
+            self.targets.get(kv[0]) or 0.0,
+            kv[1][1] - kv[1][0]
+        ], self.resources.items()))
+        return tabulate(rows, headers=['Resource', 'UsednProd', 'Requested', 'Excess'], **kwargs)
 
 
 class RecipeBook:
@@ -83,14 +139,7 @@ class RecipeBook:
         :return: The total recipe batches and resource counts.
         """
         z, zt = RecipeBook.zero(use_fractions)
-
-        # the total quantity of an ingredient/resource
-        #       first part is the "demand", i.e. how much is required
-        #       second part is the "supply", i.e. how much will be produced (may be greater than demand if it's a byproduct)
-        resource_counts = {}
-
-        # how many batches are we producing of each recipe
-        recipe_batches = {}
+        calcs = Calculations(self, targets)
 
         # set the demand for each target as the required quantities
         for target, required in targets.items():
@@ -101,20 +150,20 @@ class RecipeBook:
                 recipe = self.get_recipe_for(target)
                 if recipe is None:
                     # raw resource, not sure why it was requested, but give them what they want
-                    resource_counts[target] = (required, required)
+                    calcs.resources[target] = (required, required)
                 else:
-                    resource_counts[target] = (required, z())
-                    recipe_batches[recipe.name] = zt()
+                    calcs.resources[target] = (required, z())
+                    calcs.recipes[recipe.name] = zt()
             elif self.is_recipe(target):
-                recipe_batches[target] = (required, z())
+                calcs.recipes[target] = (required, z())
             else:
                 raise RuntimeError("Unrecognized identifier: " + target)
 
-        while self._propagate(recipe_batches, resource_counts, round_batches, round_resources, use_fractions):
+        while self._propagate(calcs, round_batches, round_resources, use_fractions):
             # multiple iterations are required when recipes produces useful byproducts
             pass
 
-        return recipe_batches, resource_counts
+        return calcs
 
     def get(self, name):
         return self._recipes.get(name)
@@ -201,21 +250,20 @@ class RecipeBook:
         except ValueError:
             raise ParseError("Crafter '{}' if not able to craft '{}'.".format(crafter.name, recipe))
 
-    def _propagate(self, recipe_batches: Counts, resource_counts: Counts, round_batches: bool, round_resources: bool, use_fractions=False) -> bool:
+    def _propagate(self, calcs: Calculations, round_batches: bool, round_resources: bool, use_fractions=False) -> bool:
         """
         Construct and propagate the implications of what recipe requirements we know to determine the total requirements of
         production by updating the batches and the resulting quantities of produced resources. This needs to be called
         multiple times for some problems to find an optimal solution.
 
         :param book: Book of all available recipes.
-        :param recipe_batches: Counts for each of the recipe nodes.
-        :param resource_counts: Counts for each of the resource nodes.
+        :param calcs: Stored calculation information to solve this problem.
         :param use_fractions: Whether fractions should be used for computation
         :param round_batches: If true, it will round up the number of batches required (and propagate the consequences).
         :param round_resources: If true, it will round up the number of resources required (and propagate the consequences).
         :return: Whether any changes were made to the graph.
         """
-        pending_changes: Set[str] = set(recipe_batches.keys())
+        pending_changes: Set[str] = set(calcs.recipes.keys())
         changes_made = False
         z, zt = RecipeBook.zero(use_fractions)
 
@@ -224,13 +272,13 @@ class RecipeBook:
             recipe = self[pending_changes.pop()]
 
             # 2) find the total number of batches needed to produce the demanded output (for which it is the recipe of)
-            base_batches = recipe_batches.get(recipe.name) or zt()
+            base_batches = calcs.recipes.get(recipe.name) or zt()
             # If not reducing: the user may request a minimum number of batches (will be >= 0)
             # If reducing: max number of batches we can remove (will be <= 0) while preserving the user requested min
             batches = max(z(), base_batches[0] - base_batches[1])
 
             for resource in recipe.outputs():
-                demand, supply = resource_counts.get(resource) or zt()
+                demand, supply = calcs.resources.get(resource) or zt()
 
                 if batches < 0:
                     # Cannot reduce the number of batches below the demanded amount even if this is not designated recipe
@@ -256,11 +304,11 @@ class RecipeBook:
             changes_made = True
 
             # update the current number of batches to the new number we have deemed appropriate
-            recipe_batches[recipe.name] = (base_batches[0], base_batches[1] + batches)
+            calcs.recipes[recipe.name] = (base_batches[0], base_batches[1] + batches)
 
             # 3) update the input resources to reflect the new demand
             for resource in recipe.inputs():
-                counts = resource_counts.get(resource) or zt()
+                counts = calcs.resources.get(resource) or zt()
                 consumed = counts[0] + recipe.consumed(resource, batches)
                 if round_resources:
                     consumed = ceil(consumed)
@@ -273,16 +321,16 @@ class RecipeBook:
                     counts = (counts[0], counts[0])
                 else:
                     pending_changes.add(r2.name)
-                resource_counts[resource] = counts
+                calcs.resources[resource] = counts
 
             # 4) update the output resources to reflect the new supply
             for resource in recipe.outputs():
-                counts = resource_counts.get(resource) or zt()
+                counts = calcs.resources.get(resource) or zt()
                 produced = counts[1] + recipe.produced(resource, batches)
                 if round_resources:
                     produced = floor(produced)
                 counts = (counts[0], produced)  # increase/decrease supply
-                resource_counts[resource] = counts
+                calcs.resources[resource] = counts
 
         return changes_made
 

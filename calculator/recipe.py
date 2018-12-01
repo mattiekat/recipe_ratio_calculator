@@ -1,12 +1,23 @@
 import re
-from typing import Dict, List, Union
 from fractions import Fraction
+from typing import Dict, List, Union
 
 from calculator import ParseError, asfrac
-from calculator.crafter import Crafter
 
 recipe_pattern = re.compile('([a-zA-Z_]\w*)\s*{([\d\w, ]+)?}\s*->\s*{([\d\w, ]+)?}\s*(?:/\s*(\d+(?:\.\d+)?))?\s*$')
 resource_pattern = re.compile('\s*(\d+)\s+([a-zA-Z_]\w*)')
+
+
+class Crafter:
+    def __init__(self, name: str, efficiency: float):
+        self.name = name
+        self.efficiency = efficiency
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe:

@@ -1,9 +1,9 @@
-import sys
-from calculator.book import RecipeBook
 import re
-from typing import Dict, Tuple
-from tabulate import tabulate
+import sys
+
 import yaml
+
+from calculator.book import RecipeBook
 
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)\s*$')
 
@@ -41,33 +41,9 @@ def main():
         if invalid:
             continue
 
-        batches, quantities = book.calculate(targets)
-        print(tabulate_recipe_batches(book, batches), end='\n\n')
-        print(tabulate_resource_requirements(quantities, targets), end='\n\n')
-
-
-def tabulate_recipe_batches(book: RecipeBook, batches: Dict[str, Tuple[float, float]]) -> str:
-    if book.crafters_defined():
-        rows = sorted(map(lambda kv: [
-            book.get_crafter_for(kv[0]) or 'Default',
-            kv[0], kv[1][1], kv[1][0]
-        ], batches.items()))
-        return tabulate(rows, headers=['Crafter', 'Recipe', 'Required', 'Requested'])
-    else:
-        rows = sorted(map(lambda kv: [
-            kv[0], kv[1][1], kv[1][0]
-        ], batches.items()))
-        return tabulate(rows, headers=['Recipe', 'Required', 'Requested'])
-
-
-def tabulate_resource_requirements(requirements: Dict[str, Tuple[float, float]], targets: Dict[str, float]) -> str:
-    rows = sorted(map(lambda kv: [
-        kv[0],
-        kv[1][0] - (targets.get(kv[0]) or 0.0),
-        targets.get(kv[0]) or 0.0,
-        kv[1][1] - kv[1][0]
-    ], requirements.items()))
-    return tabulate(rows, headers=['Resource', 'UsednProd', 'Requested', 'Excess'])
+        results = book.calculate(targets)
+        print(results.tabulate_recipes(), end='\n\n')
+        print(results.tabulate_resources(), end='\n\n')
 
 
 def _read_request(str):
