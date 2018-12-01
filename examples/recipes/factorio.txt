@@ -1,7 +1,0 @@
-r_assembly_machine {3 gcirc, 5 gears, 9 ironp} -> {1 assembly_machine_1} / 0.5
-r_gcirc {3 copper_cable, 1 ironp} -> {1 gcirc} / 0.5
-r_copper_cable {1 copperp} -> {2 copper_cable} / 0.5
-r_iron_gear {2 ironp} -> {1 iron_gear} / 0.5
-r_copperp {1 coppero} -> {1 copperp} / 3.5
-r_ironp {1 irono} -> {1 ironp} / 3.5
-END

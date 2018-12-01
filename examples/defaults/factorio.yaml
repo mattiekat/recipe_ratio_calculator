@@ -1,0 +1,7 @@
+---
+crafters:
+  # recipe: default_crafter
+  electronic_circuit: asm_mec2
+  assembly_machine: asm_mec2
+# recipes:
+#   resource: default_recipe

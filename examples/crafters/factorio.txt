@@ -1,7 +1,0 @@
-assembly_machine_1 0.5             r_copper_cable, r_iron_gear
-assembly_machine_2 0.75            r_assembly_machine, r_gcirc
-assembly_machine_3 1.25
-stone_furnace 1.0
-steel_furnace 2.0                  r_copperp, r_ironp
-electric_furnace 3.0
-END

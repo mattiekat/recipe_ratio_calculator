@@ -1,0 +1,60 @@
+---
+recipes:
+  assembly_machine:
+    inputs:
+      electronic_circuit: 3
+      gears: 5
+      iron_plate: 9
+    outputs:
+      assembly_machine_1: 1
+    duration: 0.5
+    # note that the first crafter listed will be used by default
+    crafters: [asm_mec1, asm_mec2, asm_mec3]
+  electronic_circuit:
+    inputs:
+      copper_cable: 3
+      iron_plate: 1
+    outputs:
+      electronic_circuit: 1
+    duration: 0.5
+    crafters: [asm_mec1, asm_mec2, asm_mec3]
+  copper_cable:
+    inputs: {copper_plate: 1}
+    outputs: {copper_cable: 2}
+    duration: 0.5
+    crafters: [asm_mec1, asm_mec2, asm_mec3]
+  iron_gear:
+    inputs:
+      iron_plate: 2
+    outputs:
+      iron_gear: 1
+    duration: 0.5
+    crafters:
+      - asm_mec1
+      - asm_mec2
+      - asm_mec3
+  copper_plate:
+    inputs: { copper_ore: 1 }
+    outputs: { copper_plate: 1 }
+    duration: 3.5
+    crafters:
+      - stone_furnace
+      - steel_furnace
+      - electric_furnace
+  iron_plate:
+    inputs: { iron_ore: 1 }
+    outputs: { iron_plate: 1 }
+    duration: 3.5
+    crafters: [ stone_furnace, steel_furnace, electric_furnace ]
+crafters:
+  asm_mec1: 0.5
+  asm_mec2: 0.75
+  asm_mec3: 1.25
+  stone_furnace: 1.0
+  steel_furnace: 2.0
+  electric_furnace: 3.0
+defaults:
+  # only one recipe for each resource, so these are technically not needed
+  # resource: recipe
+  iron_plate: iron_plate
+  copper_plate: copper_plate

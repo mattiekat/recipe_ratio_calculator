@@ -1,11 +1,9 @@
-from calculator.recipe import Crafter, Recipe
-from itertools import chain
 from typing import Dict, Set, Optional
-from calculator import ParseError, Counts
-import re
 from typing import Tuple
 
-default_pattern = re.compile('([a-zA-Z_]\w*)\s+([a-zA-Z_]+)\s*$')
+from calculator import ParseError, Counts
+from calculator.crafter import Crafter
+from calculator.recipe import Recipe
 
 
 class RecipeBook:
@@ -15,79 +13,58 @@ class RecipeBook:
         self._defaults: Dict[str, Optional[Recipe]] = {}
         self._crafters: Dict[str, Crafter] = {}
 
-    def add_recipes_from_stream(self, inputstream):
+    @staticmethod
+    def from_obj(book: Dict, defaults: Optional[Dict]=None):
         """
-        Read multiple recipes and add them to this book. This will continue reading until "END" is read.
-
-        If any new recipes have the same name as an existing recipe, the old one will be replaced.
-
-        :param inputstream: A file, stdin, or other iterable object which yields a single line at a time.
+        Parse a recipe book object. Mostly to read from YAML or JSON.
+        :param book: See the recipe book schema in the readme.
+        :param defaults: See the defaults schema in the readme. (This is to override defaults in the book object.)
+        :return: a new RecipeBook
         """
+        self = RecipeBook()
 
-        for l in inputstream:
-            if l[0:3] == 'END':
-                break
-            recipe = Recipe.from_str(l)
+        if 'crafters' in book:
+            for name, speed in book['crafters'].items():
+                self._crafters[name] = Crafter(name, float(speed))
 
-            if recipe.name in self._resources:
-                raise ParseError("Cannot have duplicated identifiers between recipes and resources.")
-            for resource in chain(recipe.inputs(), recipe.outputs()):
-                if resource in self._recipes:
-                    raise ParseError("Cannot have duplicated identifiers between recipes and resources.")
+        # if a recipes section is missing, assume the whole obj is that section
+        recipes = book.get('recipes') or book
+        for name, obj in recipes.items():
+            r = Recipe.from_obj(name, obj, self._crafters)
+            self._resources.update(r.inputs())
+            self._resources.update(r.outputs())
+            self._recipes[name] = r
 
-            self._recipes[recipe.name] = recipe
-            for resource in chain(recipe.inputs(), recipe.outputs()):
-                self._resources.add(resource)
+        if 'defaults' in book:
+            for resource, recipe in book['defaults'].items():
+                self.set_default_recipe(resource, recipe)
 
-    def set_defaults_from_stream(self, inputstream):
+        if defaults:
+            self.set_defaults_from_obj(defaults)
+
+        return self
+
+    def set_defaults_from_obj(self, obj):
         """
-        Read multiple default recipe choices for given resources. This will continue reading until "END" is read.
-
-        New defaults will override existing ones.
-
-        :param inputstream: A file, stdin, or other iterable object which yields a single line at a time.
+        Override current recipe defaults and crafters which will be used.
+        :param obj: See the defaults schema in the readme.
         """
-        for l in inputstream:
-            if l[0:3] == 'END':
-                break
-            m = default_pattern.match(l)
-            if m is None:
-                raise ParseError("Invalid default definition: " + l)
+        recipes = {}
+        crafters = {}
 
-            resource, recipe = m[1], m[2]
-            if not self.is_resource(resource):
-                raise ParseError("No resource '{}' found".format(resource))
-            if not self.is_recipe(recipe):
-                raise ParseError("No recipe '{}' found".format(recipe))
-            recipe = self[recipe]
-            if not recipe.produces(resource):
-                raise ParseError("The recipe '{}' does not produce the resource '{}'".format(recipe, resource))
+        if 'recipes' in obj:
+            recipes = obj['recipes']
+            if 'crafters' in obj:
+                crafters = obj['crafters']
+        elif 'crafters' in obj:
+            crafters = obj['crafters']
+        else:
+            recipes = obj
 
-            self._defaults[resource] = recipe
-
-    def set_crafters_from_stream(self, inputstream):
-        """
-        Read multiple default crafter choices for given resources. This will continue reading until "END" is read.
-        New values will override existing ones.
-
-        :param inputstream: A file, stdin, or other iterable object which yields a single line at a time.
-        """
-        for l in inputstream:
-            if l[0:3] == 'END':
-                break
-
-            crafter = Crafter.from_str(l)
-
-            for r in crafter.recipes:
-                if not self.is_recipe(r):
-                    raise ParseError("No recipe '{}' found".format(r))
-
-            # make them references to the same string to save memory and make comparisons easier
-            crafter.recipes = set(map(lambda r: self[r].name, crafter.recipes))
-
-            self._crafters[crafter.name] = crafter
-            for recipe in map(self.__getitem__, crafter.recipes):
-                recipe.crafter = crafter
+        for resource, recipe in recipes.items():
+            self.set_default_recipe(resource, str(recipe))
+        for recipe, crafter in crafters.items():
+            self.set_default_crafter(recipe, str(crafter))
 
     def calculate(self, targets: Dict[str, float]) -> Tuple[Counts, Counts]:
         """
@@ -95,6 +72,8 @@ class RecipeBook:
 
         Note: Production targets for resources define how many of the resource must be "left over" (i.e. not consumed by
         other recipes) while production targets for recipes define the minimum number of batches which must be run.
+
+        Note: If a target is both listed as a recipe and a resource, the resource is assumed.
 
         :param targets: Production targets specified by the user.
         :return: The total recipe batches and resource counts.
@@ -110,9 +89,7 @@ class RecipeBook:
 
         # set the demand for each target as the required quantities
         for target, required in targets.items():
-            if self.is_recipe(target):
-                recipe_batches[target] = (required, 0.0)
-            elif self.is_resource(target):
+            if self.is_resource(target):
                 # find it's recipe and add that
                 recipe = self.get_recipe_for(target)
                 if recipe is None:
@@ -121,6 +98,8 @@ class RecipeBook:
                 else:
                     resource_counts[target] = (required, 0.0)
                     recipe_batches[recipe.name] = (0.0, 0.0)
+            elif self.is_recipe(target):
+                recipe_batches[target] = (required, 0.0)
             else:
                 raise RuntimeError("Unrecognized identifier: " + target)
 
@@ -170,13 +149,17 @@ class RecipeBook:
         :param recipe: Recipe to find the crafter for.
         :return: Chosen recipe to produce the resource or None if it is a raw resource that has no recipe.
         """
-        return self[recipe].crafter
+        crafters = self[recipe].crafters
+        return None if crafters is None else crafters[0]
 
     def is_recipe(self, identifier):
         return identifier in self._recipes
 
     def is_resource(self, identifier):
         return identifier in self._resources
+
+    def is_crafter(self, identifier):
+        return identifier in self._crafters
 
     def is_raw_resource(self, resource):
         return self.get_recipe_for(resource) is None
@@ -189,6 +172,27 @@ class RecipeBook:
 
     def crafters_defined(self):
         return len(self._crafters) > 0
+
+    def set_default_recipe(self, resource: str, recipe: str):
+        if not self.is_resource(resource):
+            raise ParseError("Resource '{}' not defined.".format(resource))
+        if not self.is_recipe(recipe):
+            raise ParseError("Recipe '{}' not defined.".format(recipe))
+        self._defaults[resource] = self[recipe]
+
+    def set_default_crafter(self, recipe: str, crafter: str):
+        if not self.is_recipe(recipe):
+            raise ParseError("Recipe '{}' is not defined.".format(recipe))
+        if not self.is_crafter(crafter):
+            raise ParseError("Crafter '{}' is not defined.".format(crafter))
+        crafter = self._crafters[crafter]
+        rcrafters = self._recipes[recipe].crafters  # the recipe's crafter list
+        try:
+            index = rcrafters.index(crafter)
+            # swap the one we want with the front of the list
+            rcrafters[0], rcrafters[index] = rcrafters[index], rcrafters[0]
+        except ValueError:
+            raise ParseError("Crafter '{}' if not able to craft '{}'.".format(crafter.name, recipe))
 
     def _propagate(self, recipe_batches: Counts, resource_counts: Counts) -> bool:
         """

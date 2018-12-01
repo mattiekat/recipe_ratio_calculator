@@ -1,38 +1,29 @@
 import sys
 from calculator.book import RecipeBook
 import re
-from typing import Dict, Set, Tuple
+from typing import Dict, Tuple
 from tabulate import tabulate
+import yaml
 
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)\s*$')
 
 
 def main():
-    book = RecipeBook()
+    book = None
     if len(sys.argv) > 1:
         with open(sys.argv[1]) as filestream:
-            book.add_recipes_from_stream(filestream)
+            book = RecipeBook.from_obj(yaml.load(filestream))
             print("Found recipes: {}".format(sorted(book.recipes())))
             print("Found resources: {}".format(sorted(book.resources())))
     else:
-        print("Enter recipes followed by 'END'.")
-        book.add_recipes_from_stream(sys.stdin)
+        print("Must specify a recipe book!", file=sys.stderr)
+        exit(1)
 
     if len(sys.argv) > 2:
         with open(sys.argv[2]) as filestream:
-            book.set_defaults_from_stream(filestream)
-    else:
-        print("Enter any defaults followed by 'END'.")
-        book.set_defaults_from_stream(sys.stdin)
+            book.set_defaults_from_obj(yaml.load(filestream))
 
-    if len(sys.argv) > 3:
-        with open(sys.argv[3]) as filestream:
-            book.set_crafters_from_stream(filestream)
-    else:
-        print("Enter any crafters followed by 'END'.")
-        book.set_crafters_from_stream(sys.stdin)
-
-    print("Specify a quantity of a resource or recipe you would like produced and type END when done.")
+    print("Specify a quantity of a resource you would like produced and type END when done.")
     while True:
         l = input('=> ')
         if l[0:3] == 'END':
@@ -44,7 +35,7 @@ def main():
 
         invalid = False
         for t in targets:
-            if not (book.is_recipe(t) or book.is_resource(t)):
+            if not book.is_resource(t):
                 print("Could not find target: " + t)
                 invalid = True
         if invalid:

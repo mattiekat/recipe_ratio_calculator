@@ -1,0 +1,27 @@
+---
+recipes:
+  piston:
+    inputs:
+      planks: 3
+      cobblestone: 4
+      redstone: 1
+      iron_ingot: 1
+    # YAML is flexible :)
+    outputs: { piston: 1 }
+  planks:
+    inputs: { log: 1 }
+    outputs: { planks: 4 }
+  smelt_iron_with_coal:
+    inputs:
+      iron_ore: 8
+      coal: 1
+    outputs:
+      iron_ingot: 8
+  smelt_iron_with_planks:
+    inputs:
+      iron_planks: 3
+      planks: 2
+    outputs:
+      iron_ingot: 3
+defaults:
+  iron_ingot: smelt_iron_with_coal

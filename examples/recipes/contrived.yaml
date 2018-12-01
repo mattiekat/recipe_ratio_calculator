@@ -1,0 +1,21 @@
+---
+D:
+  inputs:
+    c: 2
+    b: 4
+    a: 1
+  outputs:
+    d: 1
+    w: 2
+C:
+  inputs:
+    a: 5
+  outputs:
+    c: 2
+    b: 1
+    w: 1
+B:
+  inputs:
+    a: 2
+  outputs:
+    b: 1

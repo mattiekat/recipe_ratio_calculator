@@ -1,14 +1,15 @@
 import re
-from typing import Set
+from typing import Dict, List
+
 from calculator import ParseError
+from calculator.crafter import Crafter
 
 recipe_pattern = re.compile('([a-zA-Z_]\w*)\s*{([\d\w, ]+)?}\s*->\s*{([\d\w, ]+)?}\s*(?:/\s*(\d+(?:\.\d+)?))?\s*$')
 resource_pattern = re.compile('\s*(\d+)\s+([a-zA-Z_]\w*)')
-crafter_pattern = re.compile('([a-zA-Z_]\w*)\s+(\d+(?:\.\d+)?)\s+(.*)$')
 
 
 class Recipe:
-    def __init__(self, name, inputs=None, outputs=None, duration=1.0, crafter=None):
+    def __init__(self, name, inputs=None, outputs=None, duration=1.0, crafters=None):
         """
         Create a new recipe.
         :param name: Recipe identifier name.
@@ -16,56 +17,55 @@ class Recipe:
             name, and the value the amount required for the recipe.
         :param outputs: Optional list of outputs which can be converted to a Dict[str, float] with the key the resource
             name, and the value the amount produced by the recipe.
-        :param efficiency: The rate at which a machine making this recipe works.
         :param duration: The amount of time a standard system would take to make this recipe.
+        :param crafters: List of crafters which can make this recipe.
         """
         self.name = name
-        self._inputs = dict(inputs or [])
-        self._outputs = dict(outputs or [])
-        self._duration = duration
-        self.crafter = crafter
+        self._inputs: Dict[str, float] = dict(inputs or [])
+        self._outputs: Dict[str, float] = dict(outputs or [])
+        self._duration: float = duration
+        self.crafters: List[Crafter] = crafters
 
     @staticmethod
-    def from_str(str, mode='real'):
+    def from_obj(name, obj: Dict, aval_crafters: Dict[str, Crafter]):
         """
-        Parses a string version of a recipe in the form `{1 input1, 3 input2} -> {2 output} * efficiency/duration`.
-        :param str: The string to parse
-        :param mode: Does nothing at this time.
-        :return: The converted recipe.
+        Parse an object representation of a recipe. Mostly to read from YAML or JSON.
+        :param name: Name of the new recipe.
+        :param obj: See recipe schema in readme.
+        :param aval_crafters: Available crafters which can be specified.
+        :return: A new recipe object.
         """
-        # initial reading of the string
-        m = recipe_pattern.match(str)
-        if m is None:
-            raise ParseError('Malformed recipe: ' + str)
-        name = m[1]
-        r_inputs = m[2]
-        r_outputs = m[3]
-
-        duration = 1.0 if m[4] is None else float(m[4])
-
-        # parse the raw inputs and outputs strings
         inputs = {}
         outputs = {}
+        duration = 1.0
+        crafters = []
 
-        if r_inputs is not None:
-            for input in r_inputs.split(','):
-                m = resource_pattern.match(input)
-                if m is None:
-                    raise ParseError('Malformed inputs: ' + r_inputs)
-                inputs[m[2]] = int(m[1])
-        if r_outputs is not None:
-            for output in r_outputs.split(','):
-                m = resource_pattern.match(output)
-                if m is None:
-                    raise ParseError('Malformed outputs: ' + r_outputs)
-                outputs[m[2]] = int(m[1])
-        if r_outputs is None and r_inputs is None:
-            raise ParseError('Recipe must have at least one input or output: ' + str)
+        if 'inputs' in obj:
+            for resource, count in obj['inputs'].items():
+                inputs[resource] = float(count)
+        if 'outputs' in obj:
+            for resource, count in obj['outputs'].items():
+                outputs[resource] = float(count)
 
-        return Recipe(name, inputs, outputs, duration)
+        if len(inputs) and len(outputs) == 0:
+            raise ParseError("Recipe {} does not have inputs or outputs!".format(name))
+        if len(set(inputs.keys()) & set(outputs.keys())) > 0:
+            raise ParseError("Recipe {} has an output which is also an input!".format(name))
+
+        if 'duration' in obj:
+            duration = float(obj['duration'])
+
+        if 'crafters' in obj:
+            for c in obj['crafters']:
+                if c not in aval_crafters:
+                    raise ParseError('Crafter {} not defined.'.format(c))
+
+                crafters.append(aval_crafters[c])
+
+        return Recipe(name, inputs, outputs, duration, crafters)
 
     def efficiency(self):
-        return 1.0 if self.crafter is None else self.crafter.efficiency
+        return 1.0 if len(self.crafters) == 0 else self.crafters[0].efficiency
 
     def produces(self, resource: str) -> bool:
         """
@@ -145,25 +145,3 @@ class Recipe:
         if self._duration != 1.0:
             s += ' / {}'.format(self._duration)
         return s
-
-
-class Crafter:
-    def __init__(self, name: str, recipes: Set[str], efficiency: float):
-        self.name = name
-        self.efficiency = efficiency
-        self.recipes = set(recipes)
-
-    @staticmethod
-    def from_str(str):
-        m = crafter_pattern.match(str)
-        if m is None:
-            raise ParseError("Invalid crafter description: " + str)
-        recipes = set(l.strip() for l in m[3].split(','))
-        recipes.discard('')
-        return Crafter(m[1], recipes, float(m[2]))
-
-    def __lt__(self, other):
-        return self.name < other.name
-
-    def __str__(self):
-        return self.name

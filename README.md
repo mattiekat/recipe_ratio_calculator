@@ -17,18 +17,7 @@ These reasons all (eventually) lead me to create this generic solver for the rec
 
 ## Demo Session
 ```
-$ python main.py
-Enter recipes followed by 'END'.
-r_piston {3 planks, 4 cobblestone, 1 redstone, 1 iron} -> {1 piston}
-r_planks {1 wood} -> {4 planks}
-r_iron_c {8 iron_ore, 1 coal} -> {8 iron}
-r_iron_w {3 iron_ore, 2 planks} -> {3 iron}
-END
-Enter any defaults followed by 'END'.
-iron r_iron_w
-END
-Enter any crafters followed by 'END'.
-END
+$ python main.py examples/recipes/minecraft.yaml examples/defaults/minecraft.yaml
 Specify a quantity of a resource or recipe you would like produced and type END when done.
 => 12 planks
 Recipe      Required    Requested
@@ -80,37 +69,20 @@ wood             67.3333            0         0
 ```
 
 ## Installation
-To run this script, you will need [Python v3.6](https://www.python.org/downloads/) or later, along with the
-[tabulate](https://pypi.org/project/tabulate/) package.
+To run this script, you will need [Python v3.6](https://www.python.org/downloads/) or later, along with
+[tabulate](https://pypi.org/project/tabulate/) package and [PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation).
 
 ## Usage
-You have two primary options right now for execution, the first is to define the recipe book in a plain-text document
-and also the defaults and crafters specifications. The second is to input them into standard input (aka lots-o-typing).
-In either case, read on for more information about how to specify recipes, defaults, and crafters.
+You will need a recipe book defined for your domain, see the below schema section for more information on how to do
+this, pass the path to this as the first parameter to the script.
 
-The parameter order is
-1) recipes
-2) default recipes
-3) recipe crafters
-
-If you wish to specify 1 and 2 in a file that works, but not 1 and 3 (for now). Any which are not specified will be
-promoted for when you run the application, to which you may safely enter 'END' for more basic cases. 
+Optionally, you can override defaults by adding the path to this as the second parameter to the script. While the
+defaults within the recipe book should be sufficient to get started, overriding these allows you to choose different
+recipes to produce resources or different machines to craft recipes, which as your game progresses, may make sense.    
 
 After initializing everything, enter queries in the form `count identifier[, count identifier[..]]`. Say I want
 to create 10 piston units and 64 wood planks, then I would enter `16 piston, 64 planks`. There is a more complete
 example below.
-
-### Understanding User Targets
-Note that `count` changes meaning depending on whether the `identifier` specifies a recipe or a resource.
-- **If `count` specifies a resource/ingredient, then it defines the amount of that resource which should be left-over**
-after all things have been considered. In the above example, I want to have 16 pistons result from all the crafting
-along with 64 planks. If some planks are needed by another recipe (like the piston recipe...) we will **not** use those
-for the pistons and instead produce the number we want left over plus any others which are required by other recipes.
-
-- **If `count` specifies a recipe, then it defines the minimum number of batches that will be calculated.** For example,
-if you chose to use the recipe for `planks` instead (`16 r_planks`), you would find you need to make only 64
-(16 batches) instead of 112 (28 batches). This difference is because 48 planks are required by the piston recipe, so
-some of those planks won't be left-over at the end.
 
 ### Understanding Resources
 To effectively use this application, it is important to understand that **recipe inputs and outputs can be
@@ -120,73 +92,67 @@ whereas in games like Factorio the latter interpretation is more appropriate bec
 resources and you usually care about how many electronic circuits you produce per tick, for example, not how many
 resources it would take to make 200 of them&mdash;besides, Factorio sort-of does that calculation for you. 
 
-## Defining Recipes
-A recipe has the following components:
-1) Name - What we will refer to our recipe as
-2) Inputs - What resources are consumed by the recipe
-3) Outputs - What resources are produced by the recipe
-4) Duration - How long it takes to produce the recipe
+## Schema
+There are two types of files, the first is a recipe book containing all the recipes needed to make calculations, and the
+second is a list of (overriding) defaults which can (and probably should for some games) be modified as needed. **The
+recipe book should remain the same across all uses.**
 
-Depending on which view of resources you take, duration may or may not hold meaning. If it is 1.0
-(or left out as it defaults to 1.0), then it will be equivalent to single batch calculations, and if it is not, the
-system will be computing the items per unit time required to satisfy the flows.
+### Defaults
+There are two defaults that can be specified. The first, is for each resource, you can define the default recipe to
+craft it. The second, is for each recipe, you can define the default crafter/machine to craft it. In some games only
+the default recipes section will make sense, so the `recipes` master object can be left out as long as there is not a
+`crafters` tag.
 
-A recipe book of very different types of recipes:
-```
-stealfurnace_ironplate {1 ironore} -> {1 ironplate} / 3.5
-r_piston {3 planks, 4 cobblestone, 1 redstone, 1 iron} -> {1 piston}
-factory_textile_heavy_fabric {1 fiber, 1 dye, 1 leather} -> {1 heavy_fabric} / 40
-collector_water {} -> {1 water} / 10
-burner_generator {1 coal} -> {}
-END
-```
-
-What makes sense to represent as a recipe is very dependent on the situation. Also, the above examples were very rigid
-in their format, but spaces may (technically) be omitted and tab characters are acceptable.
-
-After all recipes have been specified, add an `END` statement is required to terminate the list.
-
-## Defining Defaults
-It is a good idea to define default recipes for any resource which has more than one way of being produced. If a default
-is not specified in advance, you will be prompted during runtime to make a choice between available recipes if the need
-arises. By specifying defaults you can streamline your use of this utility.
-
-Note that defaults are defined separately from recipes which makes it possible to change them as needed without
-altering the master set of recipes.
-
-Defaults are defined simply by writing a resource name followed by the recipe which should be used to produce it. This
-has no effect if there is only one recipe which produces a resource. An error will be raised if the resource or recipe
-does not exist or if the recipe does not output the specified resource.
-
-Example:
-```
-water collector_water
-piston r_piston
-END
+**Full schema:**
+```yaml
+crafters:
+  recipe_name: default_crafter_name
+  # ...
+recipes:
+  resource_name: default_recipe_name
+  # ...
 ```
 
-## Defining Crafters
-In some games like Factorio, it makes sense to define not only recipes, but what crafts them as it alters the time
-required to produce the resources.
+See also the example defaults.
 
-To do this, include an additional file with each crafter defined as `crafter_name efficency recipe1, recipe2, ...` with
-the end of file/input being denoted with `END`.
+### Recipe Book
+A full recipe book has three sections (if `recipes` is not present, then it assumes the whole thing is the `recipes`
+section). Both `crafters` and `defaults` may be omitted, and both can be overridden by the Defaults config listed above.
 
-For example:
+Each recipe consists of
+- `inputs`: What it consumes and the amount consumed; may be omitted
+- `outputs`: What it produces and the amount produced; may be omitted
+- `duration`: How long the recipe takes to craft; may be omitted
+- `crafters`: Which crafters are able to manufacture this recipe; may be omitted
+
+*Note that inputs and outputs cannot both be omitted for the same recipe.*
+
+The `crafters` section simply lists which crafters are available and how fast (efficiency or speed) of their operation.
+
+Finally, the `defaults` section simply specifies what recipe should be used to produce a given resource.
+
+**Full schema:**
+```yaml
+recipes:
+  recipe_name:
+    inputs:
+      input_name: quantity
+      # ...
+    outputs:
+      output_name: quantity
+      # ...
+    duration: time_required
+    crafters:
+      - crafter_name
+      # ...
+  # ...
+crafters:
+  crafter_name: crafter_efficency # or speed
+  # ...
+defaults:
+  resource_name: default_recipe_name
+  # ...
 ```
-assembly_machine_1 0.5             r_copper_cable, r_iron_gear
-assembly_machine_2 0.75            r_assembly_machine, r_gcirc
-assembly_machine_3 1.25
-stone_furnace 1.0
-steel_furnace 2.0                  r_copperp, r_ironp
-electric_furnace 3.0
-END
-
-```
-
-In the above example, there are several crafters which have no recipes defined for them, this allows the recipes to be
-easily moved around as the game progresses and the preferred crafters change. It also allows for having a blank/default
-template for a game to prevent you from having to look up all the crafters and their speeds.   
 
 ## Contributions
 I would love to add recipe books for games to prevent everyone needing to create their own. Please make a pull request
