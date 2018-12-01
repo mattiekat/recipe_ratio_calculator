@@ -1,5 +1,6 @@
 from typing import Dict, Set, Optional
 from typing import Tuple
+from math import ceil, floor
 
 from calculator import ParseError, Counts
 from calculator.crafter import Crafter
@@ -66,7 +67,7 @@ class RecipeBook:
         for recipe, crafter in crafters.items():
             self.set_default_crafter(recipe, str(crafter))
 
-    def calculate(self, targets: Dict[str, float]) -> Tuple[Counts, Counts]:
+    def calculate(self, targets: Dict[str, float], round_batches=False, round_resources=False) -> Tuple[Counts, Counts]:
         """
         Calculate the number of resources and batches of each recipe are needed to meet all the user, production targets.
 
@@ -76,6 +77,8 @@ class RecipeBook:
         Note: If a target is both listed as a recipe and a resource, the resource is assumed.
 
         :param targets: Production targets specified by the user.
+        :param round_batches: If true, it will round up the number of batches required (and propagate the consequences).
+        :param round_resources: If true, it will round up the number of resources required (and propagate the consequences).
         :return: The total recipe batches and resource counts.
         """
 
@@ -103,7 +106,7 @@ class RecipeBook:
             else:
                 raise RuntimeError("Unrecognized identifier: " + target)
 
-        while self._propagate(recipe_batches, resource_counts):
+        while self._propagate(recipe_batches, resource_counts, round_batches, round_resources):
             # multiple iterations are required when recipes produces useful byproducts
             pass
 
@@ -194,7 +197,7 @@ class RecipeBook:
         except ValueError:
             raise ParseError("Crafter '{}' if not able to craft '{}'.".format(crafter.name, recipe))
 
-    def _propagate(self, recipe_batches: Counts, resource_counts: Counts) -> bool:
+    def _propagate(self, recipe_batches: Counts, resource_counts: Counts, round_batches: bool, round_resources: bool) -> bool:
         """
         Construct and propagate the implications of what recipe requirements we know to determine the total requirements of
         production by updating the batches and the resulting quantities of produced resources. This needs to be called
@@ -203,9 +206,10 @@ class RecipeBook:
         :param book: Book of all available recipes.
         :param recipe_batches: Counts for each of the recipe nodes.
         :param resource_counts: Counts for each of the resource nodes.
+        :param round_batches: If true, it will round up the number of batches required (and propagate the consequences).
+        :param round_resources: If true, it will round up the number of resources required (and propagate the consequences).
         :return: Whether any changes were made to the graph.
         """
-
         pending_changes: Set[str] = set(recipe_batches.keys())
         changes_made = False
         while pending_changes:
@@ -234,6 +238,9 @@ class RecipeBook:
                 #   (which becomes the maximum since the values are negative)
                 batches = max(batches, recipe.batches_required(resource, demand - supply))
 
+            if round_batches:
+                batches = ceil(batches)
+
             # the new number of batches must satisfy the minimum specified by the user
             assert base_batches[1] + batches >= base_batches[0]
             if batches == 0:
@@ -247,7 +254,10 @@ class RecipeBook:
             # 3) update the input resources to reflect the new demand
             for resource in recipe.inputs():
                 counts = resource_counts.get(resource) or (0.0, 0.0)
-                counts = (counts[0] + recipe.consumed(resource, batches), counts[1])  # increase/decrease demand
+                consumed = counts[0] + recipe.consumed(resource, batches)
+                if round_resources:
+                    consumed = ceil(consumed)
+                counts = (consumed, counts[1])  # increase/decrease demand
 
                 # mark it's producing recipe as needing to be updated (if not raw)
                 r2 = self.get_recipe_for(resource)
@@ -261,7 +271,10 @@ class RecipeBook:
             # 4) update the output resources to reflect the new supply
             for resource in recipe.outputs():
                 counts = resource_counts.get(resource) or (0.0, 0.0)
-                counts = (counts[0], counts[1] + recipe.produced(resource, batches))  # increase/decrease supply
+                produced = counts[1] + recipe.produced(resource, batches)
+                if round_resources:
+                    produced = floor(produced)
+                counts = (counts[0], produced)  # increase/decrease supply
                 resource_counts[resource] = counts
 
         return changes_made

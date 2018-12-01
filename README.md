@@ -159,7 +159,5 @@ I would love to add recipe books for games to prevent everyone needing to create
 with any additions or corrections and I would be very grateful.
 
 ## Future Work
-- allow rounding up of batches and/or product demands to integer values
 - allow calculations with rational numbers instead of only real values
-- allow auto-upscaling of a recipe get perfect ratios
 - create graph output of the final recipe
