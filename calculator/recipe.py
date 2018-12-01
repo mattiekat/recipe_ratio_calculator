@@ -1,7 +1,8 @@
 import re
-from typing import Dict, List
+from typing import Dict, List, Union
+from fractions import Fraction
 
-from calculator import ParseError
+from calculator import ParseError, asfrac
 from calculator.crafter import Crafter
 
 recipe_pattern = re.compile('([a-zA-Z_]\w*)\s*{([\d\w, ]+)?}\s*->\s*{([\d\w, ]+)?}\s*(?:/\s*(\d+(?:\.\d+)?))?\s*$')
@@ -91,31 +92,64 @@ class Recipe:
         """
         return self._outputs.keys()
 
-    def produced(self, resource: str, batches=1.0) -> float:
+    def produced(self, resource: str, batches: Union[float, Fraction]=1.0) -> Union[float, Fraction]:
         """
         Calculate how much of a given resource would be produced given a certain number of batches are run.
         """
-        return (self._outputs.get(resource) or 0.0) * (self.efficiency() / self._duration) * batches
+        o = self._outputs.get(resource) or 0.0
+        e = self.efficiency()
+        d = self._duration
 
-    def consumed(self, resource: str, batches=1.0) -> float:
+        if type(batches) == Fraction:
+            o = asfrac(o)
+            e = asfrac(e)
+            d = asfrac(d)
+
+        return (o) * (e / d) * batches
+
+    def consumed(self, resource: str, batches: Union[float, Fraction]=1.0) -> Union[float, Fraction]:
         """
         Calculate how much of a given resource would be consumed given a certain number of batches are run.
         """
-        return (self._inputs.get(resource) or 0.0) * (self.efficiency() / self._duration) * batches
+        i = self._inputs.get(resource) or 0.0
+        e = self.efficiency()
+        d = self._duration
 
-    def batches_required(self, resource: str, quantity: float):
+        if type(batches) == Fraction:
+            i = asfrac(i)
+            e = asfrac(e)
+            d = asfrac(d)
+
+        return i * (e / d) * batches
+
+    def batches_required(self, resource: str, quantity: Union[float, Fraction]) -> Union[float, Fraction]:
         """
         Calculate how many batches would be required to produce a certain quantity of the specified resource if it is an
         input, otherwise how many batches would be required to consume that quantity of the specified resource.
         """
+        use_fractions = type(quantity) == Fraction
+        e = self.efficiency()
+        d = self._duration
+        z = 0.0
+
+        if use_fractions:
+            e = asfrac(e)
+            d = asfrac(d)
+            z = asfrac(z)
+
         if resource in self._inputs:
             # how many batches required to consume this much input
-            return quantity / (self._inputs[resource] * (self.efficiency() / self._duration))
+            i = self._inputs[resource]
+            if use_fractions: i = asfrac(i)
+            return quantity / (i * (e / d))
         if resource in self._outputs:
             # how many batches required to produce this much output
-            return quantity / (self._outputs[resource] * (self.efficiency() / self._duration))
+            o = self._outputs[resource]
+            if use_fractions: o = asfrac(o)
+            return quantity / (o * (e / d))
+
         # we don't produce or consume it, so no batches are required to consume it
-        return 0.0
+        return z
 
     def __hash__(self):
         return hash(self.name)

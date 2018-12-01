@@ -1,6 +1,6 @@
 ---
 recipes:
-  assembly_machine:
+  assembly_machine_1:
     inputs:
       electronic_circuit: 3
       gears: 5
