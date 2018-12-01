@@ -159,15 +159,9 @@ class RecipeBook:
             # there is no recipe, it is a raw resource
             return None
 
-        # there is more than one recipe, so prompt the user
-        print("Please select a recipe for '{}'".format(resource))
-        for i, o in enumerate(available):
-            print("{}: {}".format(i + 1, repr(o)))
-        choice = int(input('=> '))
-        choice = available[choice - 1]
-
-        self._defaults[resource] = choice
-        return choice
+        # there is more than one recipe, so just choose the first and warn the user
+        print("Multiple recipes ({}) for {}. Choosing: {}.".format(available, resource, available[0]))
+        return available[0]
 
     def get_crafter_for(self, recipe: str) -> Optional[Crafter]:
         """
