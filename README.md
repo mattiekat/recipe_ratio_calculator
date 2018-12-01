@@ -8,8 +8,7 @@ This is a utility designed to help with the computation of common recipe-related
 
 Admittedly, many of the above challenges already have domain-specific solutions, so why bother?
  
-1) There are new games being released regularly and having an core framework for the algorithms and description of the
-algorithm will prevent the problem from needing to be re-solved over and over.
+1) There are new games being released regularly and having a core framework for the algorithm will prevent the problem from needing to be re-solved over and over.
 
 2) Even those games for which there is a solver already available, it often does not support the incredibly convoluted
 tiers of recipes added by mods. *Yes, I am looking at you Greg and Bob.* 
