@@ -19,7 +19,7 @@ recipes:
       iron_ingot: 8
   smelt_iron_with_planks:
     inputs:
-      iron_planks: 3
+      iron_ore: 3
       planks: 2
     outputs:
       iron_ingot: 3

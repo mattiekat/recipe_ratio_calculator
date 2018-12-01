@@ -18,52 +18,52 @@ These reasons all (eventually) lead me to create this generic solver for the rec
 ## Demo Session
 ```
 $ python main.py examples/recipes/minecraft.yaml examples/defaults/minecraft.yaml
-Specify a quantity of a resource or recipe you would like produced and type END when done.
+Found recipes: ['piston', 'planks', 'smelt_iron_with_coal', 'smelt_iron_with_planks']
+Found resources: ['coal', 'cobblestone', 'iron_ingot', 'iron_ore', 'log', 'piston', 'planks', 'redstone']
+Specify a quantity of a resource you would like produced and type END when done.
 => 12 planks
 Recipe      Required    Requested
 --------  ----------  -----------
-r_planks           3            0
+planks             3            0
 
 Resource      UsednProd    Requested    Excess
 ----------  -----------  -----------  --------
+log                   3            0         0
 planks                0           12         0
-wood                  3            0         0
 
 => 64 piston
-Recipe      Required    Requested
---------  ----------  -----------
-r_iron_w     21.3333            0
-r_piston     64                 0
-r_planks     58.6667            0
+Recipe                    Required    Requested
+----------------------  ----------  -----------
+piston                     64                 0
+planks                     58.6667            0
+smelt_iron_with_planks     21.3333            0
 
 Resource       UsednProd    Requested    Excess
 -----------  -----------  -----------  --------
 cobblestone     256                 0         0
-iron             64                 0         0
+iron_ingot       64                 0         0
 iron_ore         64                 0         0
+log              58.6667            0         0
 piston            0                64         0
 planks          234.667             0         0
 redstone         64                 0         0
-wood             58.6667            0         0
 
-=> 64 piston, 32 plank, 4 iron
-Could not find target: plank
-=> 64 piston, 32 planks, 4 iron
-Recipe      Required    Requested
---------  ----------  -----------
-r_iron_w     22.6667            0
-r_piston     64                 0
-r_planks     67.3333            0
+=> 64 piston, 32 planks, 4 iron_ingot
+Recipe                    Required    Requested
+----------------------  ----------  -----------
+piston                     64                 0
+planks                     67.3333            0
+smelt_iron_with_planks     22.6667            0
 
 Resource       UsednProd    Requested    Excess
 -----------  -----------  -----------  --------
 cobblestone     256                 0         0
-iron             64                 4         0
+iron_ingot       64                 4         0
 iron_ore         68                 0         0
+log              67.3333            0         0
 piston            0                64         0
 planks          237.333            32         0
 redstone         64                 0         0
-wood             67.3333            0         0
 
 => END
 ```
