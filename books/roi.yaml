@@ -1,0 +1,688 @@
+recipes:
+  adhesive:
+    crafters: petrochemical_factory
+    duration: 50
+    inputs: {chemicals: 1, plastics: 2}
+    outputs: {adhesive: 2}
+  apple_smoothie:
+    crafters: drink_factory
+    duration: 35
+    inputs: {apples: 2, water: 2}
+    outputs: {apple_smoothie: 2}
+  apples:
+    crafters: orchard
+    duration: 35
+    inputs: {water: 1}
+    outputs: {apples: 2}
+  axles:
+    crafters: automotive_factory
+    duration: 60
+    inputs: {steel: 6, tire: 4}
+    outputs: {axles: 1}
+  bag_of_chips:
+    crafters: preservation_factory
+    duration: 25
+    inputs: {parchment: 1, potato: 3}
+    outputs: {bag_of_chips: 2}
+  barley_whiskey:
+    crafters: distillery_and_brewery
+    duration: 30
+    inputs: {wheat: 6, wooden_barrels: 4, yeast: 4}
+    outputs: {barley_whiskey: 1}
+  beef:
+    crafters: livestock_farm
+    duration: 45
+    inputs: {water: 1, wheat: 2}
+    outputs: {beef: 1}
+  beef_stew:
+    crafters: food_factory
+    duration: 30
+    inputs: {beef: 2, vegetables: 1, water: 1}
+    outputs: {beef_stew: 2}
+  beer:
+    crafters: distillery_and_brewery
+    duration: 40
+    inputs: {hops: 3, wooden_barrels: 1, yeast: 1}
+    outputs: {beer: 2}
+  berries:
+    crafters: plantation
+    duration: 30
+    inputs: {water: 1}
+    outputs: {berries: 2}
+  berry_pie:
+    crafters: food_factory
+    duration: 30
+    inputs: {berries: 6, dough: 4, sugar: 4}
+    outputs: {berry_pie: 1}
+  berry_smoothie:
+    crafters: drink_factory
+    duration: 35
+    inputs: {berries: 2, water: 2}
+    outputs: {berry_smoothie: 2}
+  binary_switcher:
+    crafters: home_goods_factory
+    duration: 120
+    inputs: {diodes: 1, small_furniture_base: 1, steel: 1}
+    outputs: {binary_switcher: 1}
+  biofuel:
+    crafters: distillery_and_brewery
+    duration: 20
+    inputs: {potato: 3, refined_oil: 1}
+    outputs: {biofuel: 2}
+  body_chassis:
+    crafters: automotive_factory
+    duration: 120
+    inputs: {exterior_body: 1, interior_body: 1}
+    outputs: {body_chassis: 1}
+  books:
+    crafters: papermill
+    duration: 30
+    inputs: {printed_paper: 3}
+    outputs: {books: 1}
+  bottles:
+    crafters: glass_and_metallurgy_factory
+    duration: 25
+    inputs: {glass: 3}
+    outputs: {bottles: 2}
+  brandy:
+    crafters: distillery_and_brewery
+    duration: 30
+    inputs: {bottles: 2, wine: 5}
+    outputs: {brandy: 1}
+  burgers:
+    crafters: food_factory
+    duration: 30
+    inputs: {beef: 2, dough: 4, vegetables: 2}
+    outputs: {burgers: 1}
+  buttons:
+    crafters: petrochemical_factory
+    duration: 30
+    inputs: {copper_wire: 1, plastics: 1}
+    outputs: {buttons: 2}
+  canned_fish:
+    crafters: preservation_factory
+    duration: 50
+    inputs: {cans: 1, fish: 1}
+    outputs: {canned_fish: 2}
+  canned_mutton:
+    crafters: preservation_factory
+    duration: 50
+    inputs: {cans: 1, mutton: 1}
+    outputs: {canned_mutton: 2}
+  cans:
+    crafters: glass_and_metallurgy_factory
+    duration: 30
+    inputs: {steel: 3}
+    outputs: {cans: 2}
+  capacitors:
+    crafters: home_goods_factory
+    duration: 50
+    inputs: {cans: 1, ceramic: 1, copper_wire: 1}
+    outputs: {capacitors: 2}
+  car:
+    crafters: prototype_facility
+    duration: 360
+    inputs: {body_chassis: 1, rolling_chassis: 1}
+    outputs: {car: 1}
+  car_seat:
+    crafters: carpentry
+    duration: 30
+    inputs: {cotton: 4, small_furniture_base: 5}
+    outputs: {car_seat: 1}
+  cardboard:
+    crafters: papermill
+    duration: 50
+    inputs: {heavy_pulp: 3}
+    outputs: {cardboard: 2}
+  ceramic:
+    crafters: glass_and_metallurgy_factory
+    duration: 45
+    inputs: {glass: 4, sand: 3}
+    outputs: {ceramic: 2}
+  cheese:
+    crafters: food_factory
+    duration: 20
+    inputs: {milk: 1, water: 3}
+    outputs: {cheese: 2}
+  chemicals:
+    crafters: petrochemical_factory
+    duration: 25
+    inputs: {gas: 2}
+    outputs: {chemicals: 2}
+  chicken_diner:
+    crafters: food_factory
+    duration: 180
+    inputs: {cooked_vegetables: 1, fried_chicken: 1, orange_soda: 1}
+    outputs: {chicken_diner: 1}
+  chicken_meat:
+    crafters: livestock_farm
+    duration: 30
+    inputs: {water: 1, wheat: 1}
+    outputs: {chicken_meat: 1}
+  chicken_soup:
+    crafters: preservation_factory
+    duration: 45
+    inputs: {chicken_meat: 3, vegetables: 2, water: 2}
+    outputs: {chicken_soup: 2}
+  chocolate_bar:
+    crafters: food_factory
+    duration: 30
+    inputs: {cocoa: 1, milk: 1}
+    outputs: {chocolate_bar: 2}
+  chocolate_cake:
+    crafters: food_factory
+    duration: 30
+    inputs: {cocoa: 2, eggs: 1, flour: 2}
+    outputs: {chocolate_cake: 2}
+  coal:
+    crafters: coal_mine
+    duration: 10
+    outputs: {coal: 1}
+  cocoa:
+    crafters: plantation
+    duration: 30
+    inputs: {water: 1}
+    outputs: {cocoa: 2}
+  combustion_engine:
+    crafters: automotive_factory
+    duration: 60
+    inputs: {biofuel: 8, engine_block: 1}
+    outputs: {combustion_engine: 1}
+  computer_memory:
+    crafters: glass_and_metallurgy_factory
+    duration: 180
+    inputs: {capacitors: 2, glass_tubes: 2, rubber_tubes: 2}
+    outputs: {computer_memory: 1}
+  cooked_vegetables:
+    crafters: food_factory
+    duration: 90
+    inputs: {olive_oil: 3, potato: 3, vegetables: 3}
+    outputs: {cooked_vegetables: 1}
+  copper:
+    crafters: copper_mine
+    duration: 10
+    outputs: {copper: 1}
+  copper_tubing:
+    crafters: glass_and_metallurgy_factory
+    duration: 25
+    inputs: {copper: 3}
+    outputs: {copper_tubing: 2}
+  copper_wire:
+    crafters: glass_and_metallurgy_factory
+    duration: 30
+    inputs: {copper: 2}
+    outputs: {copper_wire: 3}
+  cotton:
+    crafters: plantation
+    duration: 30
+    inputs: {water: 1}
+    outputs: {cotton: 2}
+  deluxe_books:
+    crafters: papermill
+    duration: 30
+    inputs: {leather: 1, printed_paper: 3}
+    outputs: {deluxe_books: 1}
+  dinner_container:
+    crafters: preservation_factory
+    duration: 180
+    inputs: {napkins: 2, plastic_cutlery: 2, thin_cardboard: 2}
+    outputs: {dinner_container: 1}
+  diodes:
+    crafters: home_goods_factory
+    duration: 40
+    inputs: {copper_wire: 2, glass: 2}
+    outputs: {diodes: 2}
+  dough:
+    crafters: food_factory
+    duration: 25
+    inputs: {flour: 3, water: 1}
+    outputs: {dough: 2}
+  dye:
+    crafters: textile_factory
+    duration: 30
+    inputs: {berries: 2, water: 1}
+    outputs: {dye: 2}
+  eggs:
+    crafters: livestock_farm
+    duration: 30
+    inputs: {water: 1, wheat: 1}
+    outputs: {eggs: 2}
+  engine_block:
+    crafters: home_goods_factory
+    duration: 30
+    inputs: {radiator: 2, steel: 2}
+    outputs: {engine_block: 1}
+  exterior_body:
+    crafters: automotive_factory
+    duration: 60
+    inputs: {headlights: 2, steel_frame: 1}
+    outputs: {exterior_body: 1}
+  fibers:
+    crafters: textile_factory
+    duration: 20
+    inputs: {cotton: 2}
+    outputs: {fibers: 2}
+  first_computer:
+    crafters: prototype_facility
+    duration: 360
+    inputs: {computer_memory: 6, processor: 6, punch_card_reader: 6}
+    outputs: {first_computer: 1}
+  fish:
+    crafters: fishermans_pier
+    duration: 10
+    ouputs: {fish: 1}
+  flour:
+    crafters: food_factory
+    duration: 15
+    inputs: {wheat: 2}
+    outputs: {flour: 2}
+  fried_chicken:
+    crafters: food_factory
+    duration: 90
+    inputs: {chicken_meat: 3, flour: 3, olive_oil: 3}
+    outputs: {fried_chicken: 1}
+  gas:
+    crafters: gas_pump
+    duration: 10
+    outputs: {gas: 1}
+  glass:
+    crafters: glass_and_metallurgy_factory
+    duration: 35
+    inputs: {coal: 1, sand: 2}
+    outputs: {glass: 3}
+  glass_tubes:
+    crafters: glass_and_metallurgy_factory
+    duration: 45
+    inputs: {glass: 5}
+    outputs: {glass_tubes: 2}
+  grape_juice:
+    crafters: drink_factory
+    duration: 25
+    inputs: {grapes: 2, water: 1}
+    outputs: {grape_juice: 2}
+  grapes:
+    crafters: orchard
+    duration: 35
+    inputs: {water: 1}
+    outputs: {grapes: 2}
+  hard_cider:
+    crafters: distillery_and_brewery
+    duration: 50
+    inputs: {apples: 3, sugar: 1}
+    outputs: {hard_cider: 3}
+  headlights:
+    crafters: home_goods_factory
+    duration: 30
+    inputs: {glass: 2, light_bulb: 2}
+    outputs: {headlights: 1}
+  heavy_fabric:
+    crafters: textile_factory
+    duration: 40
+    inputs: {dye: 1, fibers: 1, leather: 1}
+    outputs: {heavy_fabric: 2}
+  heavy_pulp:
+    crafters: papermill
+    duration: 30
+    inputs: {water: 1, wood: 3}
+    outputs: {heavy_pulp: 2}
+  hops:
+    crafters: crop_farm
+    duration: 45
+    inputs: {water: 1}
+    outputs: {hops: 2}
+  ink:
+    crafters: papermill
+    duration: 35
+    inputs: {coal: 2, water: 2}
+    outputs: {ink: 2}
+  interface:
+    crafters: petrochemical_factory
+    duration: 180
+    inputs: {buttons: 1, office_furniture: 1, punch_cards: 1}
+    outputs: {interface: 1}
+  interior_body:
+    crafters: automotive_factory
+    duration: 60
+    inputs: {car_seat: 2, interior_lining: 1}
+    outputs: {interior_body: 1}
+  interior_lining:
+    crafters: textile_factory
+    duration: 30
+    inputs: {cardboard: 1, heavy_fabric: 2}
+    outputs: {interior_lining: 1}
+  iron_ore:
+    crafters: iron_mine
+    duration: 10
+    outputs: {iron_ore: 1}
+  large_furniture_base:
+    crafters: carpentry
+    duration: 45
+    inputs: {wooden_planks: 3}
+    outputs: {large_furniture_base: 2}
+  leather:
+    crafters: livestock_farm
+    duration: 45
+    inputs: {water: 1, wheat: 2}
+    outputs: {leather: 1}
+  leather_furniture:
+    crafters: carpentry
+    duration: 30
+    inputs: {leather: 5, small_furniture_base: 3}
+    outputs: {leather_furniture: 1}
+  light_bulb:
+    crafters: home_goods_factory
+    duration: 40
+    inputs: {copper_wire: 3, glass: 1}
+    outputs: {light_bulb: 2}
+  light_fabric:
+    crafters: textile_factory
+    duration: 35
+    inputs: {dye: 1, fibers: 2}
+    outputs: {light_fabric: 2}
+  milk:
+    crafters: livestock_farm
+    duration: 45
+    inputs: {water: 1, wheat: 2}
+    outputs: {milk: 1}
+  mutton:
+    crafters: livestock_farm
+    duration: 30
+    inputs: {water: 1, wheat: 1}
+    outputs: {mutton: 1}
+  napkins:
+    crafters: textile_factory
+    duration: 30
+    inputs: {light_fabric: 3}
+    outputs: {napkins: 1}
+  newspapers:
+    crafters: papermill
+    duration: 30
+    inputs: {ink: 1, printed_paper: 3}
+    outputs: {newspapers: 1}
+  office_furniture:
+    crafters: carpentry
+    duration: 30
+    inputs: {large_furniture_base: 3, steel: 3}
+    outputs: {office_furniture: 1}
+  oil:
+    crafters: oil_drill
+    duration: 10
+    ouputs: {oil: 1}
+  olive_oil:
+    crafters: food_factory
+    duration: 30
+    inputs: {olives: 4}
+    outputs: {olive_oil: 2}
+  olives:
+    crafters: orchard
+    duration: 35
+    inputs: {water: 1}
+    outputs: {olives: 2}
+  orange_juice:
+    crafters: drink_factory
+    duration: 25
+    inputs: {oranges: 2, water: 1}
+    outputs: {orange_juice: 2}
+  orange_soda:
+    crafters: drink_factory
+    duration: 30
+    inputs: {bottles: 1, orange_juice: 3, soda_water: 4}
+    outputs: {orange_soda: 1}
+  oranges:
+    crafters: orchard
+    duration: 35
+    inputs: {water: 1}
+    outputs: {oranges: 2}
+  oven:
+    crafters: home_goods_factory
+    duration: 30
+    inputs: {ceramic: 1, stovetop: 1}
+    outputs: {oven: 1}
+  paints:
+    crafters: petrochemical_factory
+    duration: 40
+    inputs: {chemicals: 1, dye: 2}
+    outputs: {paints: 2}
+  parchment:
+    crafters: papermill
+    duration: 25
+    inputs: {water: 1, wood: 2}
+    outputs: {parchment: 2}
+  pizza:
+    crafters: food_factory
+    duration: 30
+    inputs: {cheese: 4, dough: 2, vegetables: 2}
+    outputs: {pizza: 1}
+  plastic_cutlery:
+    crafters: petrochemical_factory
+    duration: 35
+    inputs: {plastics: 2}
+    outputs: {plastic_cutlery: 2}
+  plastic_furniture:
+    crafters: carpentry
+    duration: 30
+    inputs: {plastics: 4, small_furniture_base: 3}
+    outputs: {plastic_furniture: 1}
+  plastics:
+    crafters: petrochemical_factory
+    duration: 35
+    inputs: {gas: 1, oil: 2}
+    outputs: {plastics: 2}
+  potato:
+    crafters: crop_farm
+    duration: 45
+    inputs: {water: 1}
+    outputs: {potato: 2}
+  premade_dinners:
+    crafters: prototype_facility
+    duration: 360
+    inputs: {berry_pie: 2, chicken_diner: 2, dinner_container: 2}
+    outputs: {premade_dinners: 1}
+  printed_paper:
+    crafters: papermill
+    duration: 50
+    inputs: {ink: 1, parchment: 3}
+    outputs: {printed_paper: 2}
+  processor:
+    crafters: home_goods_factory
+    duration: 180
+    inputs: {binary_switcher: 2, steel_frame: 1}
+    outputs: {processor: 1}
+  punch_cards:
+    crafters: papermill
+    duration: 30
+    inputs: {cardboard: 3}
+    outputs: {punch_cards: 1}
+  radiator:
+    crafters: home_goods_factory
+    duration: 50
+    inputs: {copper_tubing: 2, steel: 2}
+    outputs: {radiator: 2}
+  radio_receiver:
+    crafters: home_goods_factory
+    duration: 30
+    inputs: {diodes: 3, small_furniture_base: 1}
+    outputs: {radio_receiver: 1}
+  raw_rubber:
+    crafters: orchard
+    duration: 35
+    inputs: {water: 1}
+    outputs: {raw_rubber: 2}
+  refined_oil:
+    crafters: petrochemical_factory
+    duration: 25
+    inputs: {oil: 2}
+    outputs: {refined_oil: 2}
+  refrigerator:
+    crafters: home_goods_factory
+    duration: 55
+    inputs: {copper_tubing: 3, gas: 1, steel: 1}
+    outputs: {refrigerator: 2}
+  rolling_chassis:
+    crafters: automotive_factory
+    duration: 120
+    inputs: {axles: 1, combustion_engine: 1}
+    outputs: {rolling_chassis: 1}
+  rubber:
+    crafters: petrochemical_factory
+    duration: 35
+    inputs: {raw_rubber: 2}
+    outputs: {rubber: 3}
+  rubber_tubes:
+    crafters: petrochemical_factory
+    duration: 25
+    inputs: {rubber: 3}
+    outputs: {rubber_tubes: 2}
+  sand:
+    crafters: sand_collector
+    duration: 10
+    outputs: {sand: 1}
+  small_furniture_base:
+    crafters: carpentry
+    duration: 30
+    inputs: {wooden_planks: 2}
+    outputs: {small_furniture_base: 2}
+  soda_water:
+    crafters: drink_factory
+    duration: 35
+    inputs: {sugar: 1, water: 1}
+    outputs: {soda_water: 3}
+  soup:
+    crafters: preservation_factory
+    duration: 35
+    inputs: {vegetables: 3, water: 1}
+    outputs: {soup: 2}
+  steel:
+    crafters: glass_and_metallurgy_factory
+    duration: 40
+    inputs: {coal: 1, iron_ore: 2}
+    outputs: {steel: 3}
+  steel_barrels:
+    crafters: glass_and_metallurgy_factory
+    duration: 20
+    inputs: {steel: 2}
+    outputs: {steel_barrels: 2}
+  steel_frame:
+    crafters: glass_and_metallurgy_factory
+    duration: 50
+    inputs: {steel: 5}
+    outputs: {steel_frame: 2}
+  stovetop:
+    crafters: home_goods_factory
+    duration: 50
+    inputs: {copper_tubing: 3, steel: 1}
+    outputs: {stovetop: 2}
+  sugar:
+    crafters: plantation
+    duration: 30
+    inputs: {water: 1}
+    outputs: {sugar: 2}
+  summer_clothes:
+    crafters: textile_factory
+    duration: 30
+    inputs: {dye: 2, light_fabric: 2}
+    outputs: {summer_clothes: 1}
+  telephones:
+    crafters: home_goods_factory
+    duration: 30
+    inputs: {diodes: 2, plastics: 3}
+    outputs: {telephones: 1}
+  thin_cardboard:
+    crafters: papermill
+    duration: 30
+    inputs: {cardboard: 3}
+    outputs: {thin_cardboard: 1}
+  tire:
+    crafters: petrochemical_factory
+    duration: 35
+    inputs: {rubber: 4}
+    outputs: {tire: 2}
+  vegetables:
+    crafters: crop_farm
+    duration: 45
+    inputs: {water: 1}
+    outputs: {vegetables: 2}
+  vodka:
+    crafters: distillery_and_brewery
+    duration: 40
+    inputs: {potato: 3, wooden_barrels: 1, yeast: 1}
+    outputs: {vodka: 2}
+  waffles:
+    crafters: food_factory
+    duration: 30
+    inputs: {dough: 4, sugar: 3}
+    outputs: {waffles: 1}
+  water:
+    crafters: water_siphon
+    duration: 10
+    outputs: {water: 1}
+  wheat:
+    crafters: crop_farm
+    duration: 45
+    inputs: {water: 1}
+    outputs: {wheat: 2}
+  wine:
+    crafters: distillery_and_brewery
+    duration: 40
+    inputs: {grapes: 3}
+    outputs: {wine: 3}
+  winter_clothes:
+    crafters: textile_factory
+    duration: 30
+    inputs: {heavy_fabric: 2, wool: 2}
+    outputs: {winter_clothes: 1}
+  wood:
+    crafters: lumberyard
+    duration: 10
+    outputs: {wood: 1}
+  wooden_barrels:
+    crafters: carpentry
+    duration: 30
+    inputs: {wooden_planks: 2}
+    outputs: {wooden_barrels: 2}
+  wooden_planks:
+    crafters: carpentry
+    duration: 30
+    inputs: {wood: 3}
+    outputs: {wooden_planks: 2}
+  wool:
+    crafters: livestock_farm
+    duration: 30
+    inputs: {water: 1, wheat: 1}
+    outputs: {wool: 2}
+  work_clothes:
+    crafters: textile_factory
+    duration: 30
+    inputs: {heavy_fabric: 2, leather: 2}
+    outputs: {work_clothes: 1}
+  yeast:
+    crafters: distillery_and_brewery
+    duration: 20
+    inputs: {berries: 2, sugar: 1}
+    outputs: {yeast: 2}
+crafters:
+  automotive_factory: 1
+  carpentry: 1
+  coal_mine: 1
+  copper_mine: 1
+  crop_farm: 1
+  distillery_and_brewery: 1
+  drink_factory: 1
+  fishermans_pier: 1
+  food_factory: 1
+  gas_pump: 1
+  glass_and_metallurgy_factory: 1
+  home_goods_factory: 1
+  iron_mine: 1
+  livestock_farm: 1
+  lumberyard: 1
+  oil_drill: 1
+  orchard: 1
+  papermill: 1
+  petrochemical_factory: 1
+  plantation: 1
+  preservation_factory: 1
+  prototype_facility: 1
+  sand_collector: 1
+  textile_factory: 1
+  water_siphon: 1
