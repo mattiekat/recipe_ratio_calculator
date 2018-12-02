@@ -1,3 +1,4 @@
+import sys
 from fractions import Fraction
 from math import ceil, floor
 from typing import Dict, Set, Optional
@@ -151,7 +152,7 @@ class RecipeBook:
         for recipe, crafter in crafters.items():
             self.set_default_crafter(recipe, str(crafter))
 
-    def calculate(self, targets: Targets, use_fractions=False, round_batches=False, round_resources=False) -> Calculations:
+    def calculate(self, targets: Targets, use_fractions=False, round_batches=False, round_resources=False, max_iterations=10) -> Calculations:
         """
         Calculate the number of resources and batches of each recipe are needed to meet all the user, production targets.
         If targets is of fractions, then all calculations will be done with fractions.
@@ -164,6 +165,7 @@ class RecipeBook:
         :param targets: Production targets specified by the user.
         :param round_batches: If true, it will round up the number of batches required (and propagate the consequences).
         :param round_resources: If true, it will round up the number of resources required (and propagate the consequences).
+        :param max_iterations: Should only take 2-3 total iterations if rounding is disabled, may want a higher value in some cases.
         :return: The total recipe batches and resource counts.
         """
         z, zt = RecipeBook.zero(use_fractions)
@@ -187,9 +189,14 @@ class RecipeBook:
             else:
                 raise RuntimeError("Unrecognized identifier: " + target)
 
-        while self._propagate(calcs, round_batches, round_resources, use_fractions):
+        changed = False
+        for _ in range(max_iterations):
             # multiple iterations are required when recipes produces useful byproducts
-            pass
+            changed = self._propagate(calcs, round_batches, round_resources, use_fractions)
+            if not changed:
+                break
+        if changed:
+            print("May not have found an optimal solution, consider increasing the maximum iterations.", file=sys.stderr)
 
         return calcs
 
