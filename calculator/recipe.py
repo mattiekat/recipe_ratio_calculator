@@ -68,10 +68,11 @@ class Recipe:
             duration = float(obj['duration'])
 
         if 'crafters' in obj:
+            if type(obj['crafters']) == str:
+                obj['crafters'] = [obj['crafters']]
             for c in obj['crafters']:
                 if c not in aval_crafters:
                     raise ParseError('Crafter {} not defined.'.format(c))
-
                 crafters.append(aval_crafters[c])
 
         return Recipe(name, inputs, outputs, duration, crafters)
