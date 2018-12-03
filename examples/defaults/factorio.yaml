@@ -3,5 +3,10 @@ crafters:
   # recipe: default_crafter
   electronic_circuit: asm_mec2
   assembly_machine_1: asm_mec2
-# recipes:
-#   resource: default_recipe
+recipes:
+  iron_plate:
+  copper_plate:
+#  iron_plate: none
+#  copper_plate: None
+# by leaving them blank, we are saying they should be treated as
+# a raw resource because we already produce enough spare.

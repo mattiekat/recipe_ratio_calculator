@@ -148,9 +148,15 @@ class RecipeBook:
             recipes = obj
 
         for resource, recipe in recipes.items():
-            self.set_default_recipe(resource, str(recipe))
+            if type(recipe) in [type(None), str]:
+                self.set_default_recipe(resource, recipe)
+            else:
+                raise ParseError("Invalid type for default recipe; resource: " + resource)
         for recipe, crafter in crafters.items():
-            self.set_default_crafter(recipe, str(crafter))
+            if type(crafter) == str:
+                self.set_default_crafter(recipe, crafter)
+            else:
+                raise ParseError("Invalid type for default crafter; resource: " + recipe)
 
     def calculate(self, targets: Targets, use_fractions=False, round_batches=False, round_resources=False, max_iterations=10) -> Calculations:
         """
@@ -264,12 +270,15 @@ class RecipeBook:
     def crafters_defined(self):
         return len(self._crafters) > 0
 
-    def set_default_recipe(self, resource: str, recipe: str):
+    def set_default_recipe(self, resource: str, recipe: Optional[str]):
         if not self.is_resource(resource):
             raise ParseError("Resource '{}' not defined.".format(resource))
-        if not self.is_recipe(recipe):
+        if recipe is None:
+            self._defaults[resource] = None
+        elif not self.is_recipe(recipe):
             raise ParseError("Recipe '{}' not defined.".format(recipe))
-        self._defaults[resource] = self[recipe]
+        else:
+            self._defaults[resource] = self[recipe]
 
     def set_default_crafter(self, recipe: str, crafter: str):
         if not self.is_recipe(recipe):

@@ -108,6 +108,11 @@ craft it. The second, is for each recipe, you can define the default crafter/mac
 the default recipes section will make sense, so the `recipes` master object can be left out as long as there is not a
 `crafters` tag.
 
+If you leave a default recipe blank, as shown below for `raw_resource`, it will designate it as a raw resource, which
+means that in calculations, it will only calculate how much of the resource is needed, and not how much you have to
+produce. Depending on the resource, this could be a useful simplification; in factorio for instance, we often consider
+the production of iron plates independently of each production chain that demands them. 
+
 **Full schema:**
 ```yaml
 crafters:
@@ -115,6 +120,7 @@ crafters:
   # ...
 recipes:
   resource_name: default_recipe_name
+  raw_resource: # leaving this blank designates it as a raw resource
   # ...
 ```
 
@@ -134,7 +140,8 @@ Each recipe consists of
 
 The `crafters` section simply lists which crafters are available and how fast (efficiency or speed) of their operation.
 
-Finally, the `defaults` section simply specifies what recipe should be used to produce a given resource.
+Finally, the `defaults` section simply specifies what recipe should be used to produce a given resource. As in the
+defaults file, leaving the recipe blank will designate it as a raw resource.
 
 **Full schema:**
 ```yaml
