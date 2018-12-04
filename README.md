@@ -23,48 +23,48 @@ Found recipes: ['piston', 'planks', 'smelt_iron_with_coal', 'smelt_iron_with_pla
 Found resources: ['coal', 'cobblestone', 'iron_ingot', 'iron_ore', 'log', 'piston', 'planks', 'redstone']
 Specify a quantity of a resource you would like produced and type END when done.
 => 12 planks
-Recipe      Required    Requested
---------  ----------  -----------
-planks             3            0
+Recipe      Required
+--------  ----------
+planks             3
 
-Resource      UsednProd    Requested    Excess
-----------  -----------  -----------  --------
-log                   3            0         0
-planks                0           12         0
+Resource      Requested    UsdnPrd    Supplied    Leftover    Produced    Excess
+----------  -----------  ---------  ----------  ----------  ----------  --------
+log                   0          3           0           0           3         0
+planks               12          0           0           0          12         0
 
 => 64 piston
-Recipe                    Required    Requested
-----------------------  ----------  -----------
-piston                     64                 0
-planks                     58.6667            0
-smelt_iron_with_planks     21.3333            0
+Recipe                    Required
+----------------------  ----------
+piston                     64
+planks                     58.6667
+smelt_iron_with_planks     21.3333
 
-Resource       UsednProd    Requested    Excess
------------  -----------  -----------  --------
-cobblestone     256                 0         0
-iron_ingot       64                 0         0
-iron_ore         64                 0         0
-log              58.6667            0         0
-piston            0                64         0
-planks          234.667             0         0
-redstone         64                 0         0
+Resource       Requested    UsdnPrd    Supplied    Leftover    Produced    Excess
+-----------  -----------  ---------  ----------  ----------  ----------  --------
+cobblestone            0   256                0           0    256              0
+iron_ingot             0    64                0           0     64              0
+iron_ore               0    64                0           0     64              0
+log                    0    58.6667           0           0     58.6667         0
+piston                64     0                0           0     64              0
+planks                 0   234.667            0           0    234.667          0
+redstone               0    64                0           0     64              0
 
 => 64 piston, 32 planks, 4 iron_ingot
-Recipe                    Required    Requested
-----------------------  ----------  -----------
-piston                     64                 0
-planks                     67.3333            0
-smelt_iron_with_planks     22.6667            0
+Recipe                    Required
+----------------------  ----------
+piston                     64
+planks                     67.3333
+smelt_iron_with_planks     22.6667
 
-Resource       UsednProd    Requested    Excess
------------  -----------  -----------  --------
-cobblestone     256                 0         0
-iron_ingot       64                 4         0
-iron_ore         68                 0         0
-log              67.3333            0         0
-piston            0                64         0
-planks          237.333            32         0
-redstone         64                 0         0
+Resource       Requested    UsdnPrd    Supplied    Leftover    Produced    Excess
+-----------  -----------  ---------  ----------  ----------  ----------  --------
+cobblestone            0   256                0           0    256              0
+iron_ingot             4    64                0           0     68              0
+iron_ore               0    68                0           0     68              0
+log                    0    67.3333           0           0     67.3333         0
+piston                64     0                0           0     64              0
+planks                32   237.333            0           0    269.333          0
+redstone               0    64                0           0     64              0
 
 => END
 ```
@@ -95,7 +95,43 @@ thought of as both fixed quantities and production rates over time**. In Minecra
 the first sense because all recipes are one-time ordeals which you don't have as part of a production chain (usually)
 whereas in games like Factorio the latter interpretation is more appropriate because factories are producing "flows" of
 resources and you usually care about how many electronic circuits you produce per tick, for example, not how many
-resources it would take to make 200 of them&mdash;besides, Factorio sort-of does that calculation for you. 
+resources it would take to make 200 of them&mdash;besides, Factorio sort-of does that calculation for you.
+
+### Available Resources
+Let's say you are playing a game of minecraft and want to craft 10 pistons, but you already have 90 planks on hand and
+8 iron ingots; so how much of the raw resources do you need now? Well...
+```text
+Recipe                    Required
+----------------------  ----------
+piston                          10
+smelt_iron_with_planks           1
+
+Resource       Requested    UsdnPrd    Supplied    Leftover    Produced    Excess
+-----------  -----------  ---------  ----------  ----------  ----------  --------
+cobblestone            0         40           0           0          40         0
+iron_ingot             0         10           8           0           3         1
+iron_ore               0          3           0           0           3         0
+piston                10          0           0           0          10         0
+planks                 0         32          90          58           0         0
+redstone               0         10           0           0          10         0
+``` 
+
+As you can see, this recognizes you have enough planks, so it does not bother telling you to craft planks, and it also
+notices that you do not have enough iron ingots, so you will have to make up the difference. This example used both
+rounding of batches and resources, which is why all values are round, and also why there is an excess iron ingot
+produced (since we don't allow fractional batches).
+
+### Reading the Tables
+There are two tables, the first lists the recipes used to craft resources and the number of batches required of that
+recipe. If you are thinking of the resources as flows, then it will be the number of batches per time unit.
+
+The second table has a lot of parts, so let me go through each of them:
+- **Requested**: The amount of the resource you asked for explicitly.
+- **UsdnProd**: Short for used in production, this is literally the total amount used in crafting everything.
+- **Supplied**: The amount you said you had on hand at the beginning, i.e. the initially available amount.
+- **Leftover**: Amount of what was supplied which was not used in production.
+- **Produced**: Total amount of the resource which must/will be produced.
+- **Excess**: Quantity of produced resources which go unused. Separate from the amount leftover.  
 
 ## Schema
 There are two types of files, the first is a recipe book containing all the recipes needed to make calculations, and the
