@@ -5,6 +5,9 @@ import yaml
 
 from calculator.book import RecipeBook
 
+class ReloadBookRequest(StopIteration):
+    pass
+
 request_pattern = re.compile('\s*(\d+(?:\.\d+)?)\s*([a-zA-Z_]\w*)\s*$')
 
 
@@ -12,7 +15,7 @@ def main():
     book = None
     if len(sys.argv) > 1:
         with open(sys.argv[1]) as filestream:
-            book = RecipeBook.from_obj(yaml.load(filestream))
+            book = RecipeBook.from_obj(yaml.full_load(filestream))
             print("Found recipes: {}".format(sorted(book.recipes())))
             print("Found resources: {}".format(sorted(book.resources())))
     else:
@@ -21,13 +24,15 @@ def main():
 
     if len(sys.argv) > 2:
         with open(sys.argv[2]) as filestream:
-            book.set_defaults_from_obj(yaml.load(filestream))
+            book.set_defaults_from_obj(yaml.full_load(filestream))
 
-    print("Specify a quantity of a resource you would like produced and type END when done.")
+    print("Specify a quantity of a resource you would like produced and type END when done or RELOAD to refresh the book.")
     while True:
         l = input('=> ')
         if l[0:3] == 'END':
             break
+        if l == 'RELOAD':
+            raise ReloadBookRequest()
 
         targets = _read_request(l)
         if targets is None:
@@ -59,4 +64,9 @@ def _read_request(str):
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+        except ReloadBookRequest:
+            continue
+        break
