@@ -90,7 +90,7 @@ class Calculations:
         """
         if self.book.crafters_defined():
             rows = sorted(map(lambda kv: [
-                self.book.get_crafter_for(kv[0]) or 'Default',
+                self.book.get_crafter_for(kv[0]) or Crafter('DEFAULT', 1),
                 kv[0], kv[1][1]
             ], self.recipes.items()))
             return tabulate(rows, headers=['Crafter', 'Recipe', 'Required'], **kwargs)
@@ -126,10 +126,15 @@ class Calculations:
 
         g = Dot()
 
-        for r in self.resources:
-            g.add_node(Node('i_' + r, label='{:.3} {}'.format(float(self.produced(r) + self.supplied(r)), r), style='dashed'))
+        for resource in self.resources:
+            g.add_node(Node('i_' + resource, label='{:.3} {}'.format(float(self.produced(resource) + self.supplied(resource)), resource), style='dashed'))
         for recipe, batches in self.recipes.items():
-            g.add_node(Node('r_' + recipe, label='{:.3} {}'.format(batches[1], recipe), shape='box'))
+            if self.book.crafters_defined():
+                crafter = self.book.get_crafter_for(recipe) or Crafter('', 1)
+                label = '{:.3} {}\n{}'.format(batches[1], crafter.name, recipe)
+            else:
+                label = '{:.3} {}'.format(batches[1], recipe)
+            g.add_node(Node('r_' + recipe, label=label, shape='box'))
 
             r: Recipe = self.book[recipe]
             for output in r.outputs():
@@ -372,7 +377,7 @@ class RecipeBook:
         :return: Chosen recipe to produce the resource or None if it is a raw resource that has no recipe.
         """
         crafters = self[recipe].crafters
-        return None if crafters is None else crafters[0]
+        return None if crafters is None else (crafters[0] if len(crafters) > 0 else None)
 
     def is_recipe(self, identifier):
         return identifier in self._recipes
