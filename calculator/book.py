@@ -127,7 +127,12 @@ class Calculations:
         g = Dot()
 
         for resource in self.resources:
-            g.add_node(Node('i_' + resource, label='{:.3} {}'.format(float(self.produced(resource) + self.supplied(resource)), resource), style='dashed'))
+            color = 'black'
+            if resource in self.targets:
+                color = 'darkgreen'
+            elif self.consumed(resource) == 0:
+                color = 'brown'
+            g.add_node(Node('i_' + resource, label='{:.3} {}'.format(float(self.produced(resource) + self.supplied(resource)), resource), color=color, style='dashed'))
         for recipe, batches in self.recipes.items():
             if self.book.crafters_defined():
                 crafter = self.book.get_crafter_for(recipe) or Crafter('', 1)
