@@ -7,21 +7,40 @@ recipe = """\
   duration: {}
   crafters: {}
 """
+# row indexes
+location = {
+    "farm": {
+        "output": 0,
+        "quantity": 9,
+        "crafter": 1,
+        "duration": 2,
+        "inputs_start": 3,
+        "inputs_stop": 8
+    },
+    "factory": {
+        "output": 0,
+        "quantity": 10,
+        "crafter": 1,
+        "duration": 3,
+        "inputs_start": 4,
+        "inputs_stop": 9
+    }
+}['factory']
 
 def idf(s: str) -> str:
     return s.lower().replace(' ', '_').replace('_&_', '_and_')
 
 
-file = open('farms.csv')
+file = open('roi.csv')
 crafters = set()
 for row in csv.reader(file):
-    output = idf(row[0])
-    quantity = int(row[9])
-    crafter = idf(row[1])
+    output = idf(row[location['output']])
+    quantity = int(row[location['quantity']])
+    crafter = idf(row[location['crafter']])
     crafters.add(crafter)
-    duration = int(row[2])
+    duration = int(row[location['duration']])
     inputs = {}
-    for i in range(3, 8, 2):
+    for i in range(location['inputs_start'], location['inputs_stop'], 2):
         name = idf(row[i])
         count = int('0' + row[i+1])
         if count > 0:
