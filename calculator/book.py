@@ -128,11 +128,16 @@ class Calculations:
 
         for resource in self.resources:
             color = 'black'
-            if resource in self.targets:
+            if resource in self.targets and self.consumed(resource) == 0:
                 color = 'darkgreen'
             elif self.consumed(resource) == 0:
                 color = 'brown'
             g.add_node(Node('i_' + resource, label='{:.3} {}'.format(float(self.produced(resource) + self.supplied(resource)), resource), color=color, style='dashed'))
+            if resource in self.targets and self.consumed(resource) > 0:
+                # add a second node if requested and consumed so we can see a terminal node
+                g.add_node(Node('ir_' + resource, label='{:.3} {}'.format(float(self.requested(resource)), resource), color='darkgreen', style='dashed'))
+                weight = self.requested(resource)
+                g.add_edge(Edge('i_' + resource, 'ir_' + resource, label='{:.3}'.format(weight), weight=weight))
         for recipe, batches in self.recipes.items():
             if self.book.crafters_defined():
                 crafter = self.book.get_crafter_for(recipe) or Crafter('', 1)
